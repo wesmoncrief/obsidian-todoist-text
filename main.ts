@@ -1,4 +1,4 @@
-import {App, ButtonComponent, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting} from 'obsidian';
+import {App, ButtonComponent, Editor, MarkdownView, Plugin, PluginSettingTab, Setting} from 'obsidian';
 import {toggleServerTaskStatus, updateFileFromServer} from "./src/updateFileFromServer";
 import {FolderSuggest} from "./src/suggest/folderSuggester";
 
@@ -47,7 +47,7 @@ export default class TodoistPlugin extends Plugin {
 
 
 		if (this.settings.enableAutomaticReplacement) {
-			this.app.workspace.on('file-open', () => updateFileFromServer(this.settings, this.app));
+			this.registerEvent(this.app.workspace.on('file-open', () => updateFileFromServer(this.settings, this.app)));
 		}
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
