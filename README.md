@@ -39,3 +39,6 @@ This plugin stores your Todoist API token in plain text in your .obsidian/plugin
 
 ## Feature requests
 Please reach out (by filing a GitHub issue) if you'd like to discuss possible new features.
+
+## Attribution
+I copied the 'folder suggest' settings feature from https://github.com/liamcain/obsidian-periodic-notes - thanks!
