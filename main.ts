@@ -80,8 +80,10 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for todoist text plugin.'});
-		containerEl.createEl('h2', {text: "See https://github.com/wesmoncrief/obsidian-todoist-text/tree/master#readme for usage instructions."});
+		containerEl.empty();
+		containerEl.createEl('h1', {text: 'Todoist Text'});
+		containerEl.createEl('a', {text: 'Important - see usage instructions', href: 'https://github.com/wesmoncrief/obsidian-todoist-text/tree/master#readme'});
+		containerEl.createEl('h2', {text: 'Settings'});
 
 		const tokenDescription = document.createDocumentFragment();
 		tokenDescription.createEl("span", null, (span) => {
