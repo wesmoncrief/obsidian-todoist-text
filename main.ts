@@ -28,8 +28,6 @@ export default class TodoistPlugin extends Plugin {
 			id: 'toggle-todoist-task',
 			name: 'Toggle todoist task',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor)
-				console.log(view)
 				toggleServerTaskStatus(editor, this.settings);
 				// I think this is undocumented API/usage. If so, should find another approach
 				// @ts-ignore
@@ -77,8 +75,6 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const {containerEl} = this;
-
-		containerEl.empty();
 
 		containerEl.empty();
 		containerEl.createEl('h1', {text: 'Todoist Text'});

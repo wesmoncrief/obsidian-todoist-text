@@ -1,78 +1,84 @@
 import {Task, TodoistApi} from '@doist/todoist-api-typescript'
-import {Vault, App, TAbstractFile, Editor, Notice} from 'obsidian'
+import {App, Editor, Notice, TFile} from 'obsidian'
 import {TodoistSettings} from "../main";
 
 
-export async function updateFileFromServer(settings: TodoistSettings, app: App){
+export async function updateFileFromServer(settings: TodoistSettings, app: App) {
 	await new Promise(r => setTimeout(r, 2000));
-	// @ts-ignore
-	const openFileName = app.workspace.activeLeaf.view.file.path
-	if (settings.excludedDirectories.some(ed => openFileName.contains(ed))){
-		console.log("NOT LOOKING AT FILE BC OF EXCLUDED DIRECTORIES");
+
+	const openFileName = app.workspace.getActiveFile().path;
+	if (settings.excludedDirectories.some(ed => openFileName.contains(ed))) {
+		console.log("todoist text: not looking at file bc of excluded directories");
 		return;
 	}
 
-	const fileContents = await app.vault.adapter.read(openFileName)
-	if (fileContents.contains(settings.templateString)){
-		if (settings.authToken.contains("TODO - ")){
-			new Notice("You need to configure your Todoist API token in the Todoist text plugin settings");
+	const abstractFile = await app.vault.getAbstractFileByPath(openFileName)
+	if (!(abstractFile instanceof TFile)) {
+		return;
+	}
+	const file = abstractFile as TFile;
+	const fileContents = await app.vault.read(file)
+	if (fileContents.contains(settings.templateString)) {
+		if (settings.authToken.contains("TODO - ")) {
+			new Notice("Todoist Text: You need to configure your Todoist API token in the Todoist Text plugin settings");
 			return;
 		}
 		const formattedTodos = await getServerData(settings)
 		const newData = fileContents.replace(settings.templateString, formattedTodos);
-		await app.vault.adapter.write(openFileName, newData)
+		await app.vault.modify(file, newData)
 	}
 }
 
-export async function toggleServerTaskStatus(e: Editor, settings: TodoistSettings){
-	console.log("UPDATINg SERVER DATA")
-	const lineText = e.getLine(e.getCursor().line);
-	console.log(lineText);
-	if (!lineText.contains("[src](https://todoist.com/showTask?id=")){
-		console.log("not a todoist task here");
-	}
-	const api = new TodoistApi(settings.authToken)
-
-	const tryingToClose = lineText.contains("- [ ]");
-	const tryingToOpen = lineText.contains("- [x]");
-	if ((tryingToClose && tryingToOpen) || (!tryingToClose && !tryingToOpen)){
-		console.log("todoist err")
-		return;
-	}
-	let taskId: number;
+export async function toggleServerTaskStatus(e: Editor, settings: TodoistSettings) {
 	try {
-		taskId = parseInt(lineText.split("https://todoist.com/showTask?id=")[1].split(")")[0]);
-	} catch (e) {
-		console.log(e)
-		return;
+		const lineText = e.getLine(e.getCursor().line);
+		if (!lineText.contains("[src](https://todoist.com/showTask?id=")) {
+			return;
+		}
+
+		const api = new TodoistApi(settings.authToken)
+		const tryingToClose = lineText.contains("- [ ]");
+		const tryingToOpen = lineText.contains("- [x]");
+		if ((tryingToClose && tryingToOpen) || (!tryingToClose && !tryingToOpen)) {
+			console.log("todoist err, file has both checked and unchecke brackets")
+			return;
+		}
+		let taskId: number;
+		try {
+			taskId = parseInt(lineText.split("https://todoist.com/showTask?id=")[1].split(")")[0]);
+		} catch (e) {
+			console.log(e)
+			return;
+		}
+
+		const serverTaskName = (await api.getTask(taskId)).content;
+		if (tryingToClose) {
+			await api.closeTask(taskId);
+			new Notice(`Todoist Text: Closed "${serverTaskName}" on Todoist`);
+		}
+		if (tryingToOpen) {
+			await api.reopenTask(taskId);
+			new Notice(`Todoist Text: Re-opened "${serverTaskName}" on Todoist`);
+		}
 	}
-	const serverTaskName = (await api.getTask(taskId)).content;
-	console.log(taskId);
-	if (tryingToClose){
-		await api.closeTask(taskId);
-		new Notice(`Closed "${serverTaskName}" on Todoist`);
-	}
-	if (tryingToOpen){
-		await api.reopenTask(taskId);
-		new Notice(`Re-opened "${serverTaskName}" on Todoist`);
+	catch (e){
+		console.log("todoist text error: ", e);
+		new Notice("Todoist Text: Error trying to update task status. See console log for more details.")
 	}
 }
 
 
-async function getServerData(settings: TodoistSettings) : Promise<string> {
-	console.log("GETTING SERVER DATA")
+async function getServerData(settings: TodoistSettings): Promise<string> {
 	const api = new TodoistApi(settings.authToken)
 	let tasks: Task[];
 	try {
 		tasks = await api.getTasks({filter: settings.todoistQuery});
-	}
-	catch (e){
+	} catch (e) {
 		const errorMsg = `Todoist text: There was a problem pulling data from Todoist. ${e.responseData}`
 		console.log(errorMsg, e)
 		new Notice(errorMsg)
 	}
-	// const tasksByPriority = tasks.sort((a, b) => a.priority > b.priority);
-	console.log(tasks)
+	// todo consider sorting by priority
 	const formattedTasks = tasks.map(t => `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url})`);
 	return formattedTasks.join("\n");
 }
