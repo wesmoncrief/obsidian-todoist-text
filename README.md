@@ -6,7 +6,7 @@ Demo: ![demo](obsidian-demo.gif)
 
 ## Usage
 1. Ensure you understand the security implications (see Security section of this file)
-2. Install the plugin (Todoist Text) through Obsidian
+2. Install the plugin (TodGoist Text) through Obsidian
 3. Enable the plugin in Obsdidian
 4. Go to the Todoist Text settings and enter your Todoist API token, as explained in the settings
 5. Configure a hotkey for checking off tasks (see below section)
@@ -30,6 +30,9 @@ some other text
 When this plugin sees your keyword (`@@TODOIST@@`) on a newly opened file, it will replace that keyword with your Todoist tasks.
 
 To prevent this replacement from happening in your template file, you should add your template folder location in "Excluded Folders" of this plugin's settings.
+
+### Adding tasks
+This plugin currently does not support adding tasks to Todoist. Until then, I recommend using the Todoist desktop app - it has a global shortcut that can quickly add a task from anywhere on your computer.
 
 ## Security 
 This plugin stores your Todoist API token in plain text in your .obsidian/plugins folder. Anyone with your Todoist API token could access/manipulate all of your Todoist data. Ensure that you are not syncing/sharing your .obsidian/plugins folder for security purposes. Use this plugin at your own risk.

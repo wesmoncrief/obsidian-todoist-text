@@ -18,23 +18,6 @@ const DEFAULT_SETTINGS: TodoistSettings = {
 	enableAutomaticReplacement: true
 }
 
-/*
-reqs for publishing
-- settings
-- instructions for setup
-	- have cat do a test setup/install
-	- recommend using todoist global shortcut for adding new tasks
-	- security warning
-	- configure cmd-enter
-	- future enhancements
-		- adding tasks
-		- other upstream sources, e.g. JIRA
-- done
-	- configure template string
-	- configure setting up your secret token
-	- configure the query it runs
-
- */
 export default class TodoistPlugin extends Plugin {
 	settings: TodoistSettings;
 
