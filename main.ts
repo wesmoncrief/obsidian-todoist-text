@@ -29,6 +29,7 @@ export default class TodoistPlugin extends Plugin {
 			name: 'Toggle todoist task',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				toggleServerTaskStatus(editor, this.settings);
+				// @ts-ignore undocumented but was recommended to use here - https://github.com/obsidianmd/obsidian-releases/pull/768#issuecomment-1038441881
 				view.app.commands.executeCommandById("editor:toggle-checklist-status")
 			}
 		});
