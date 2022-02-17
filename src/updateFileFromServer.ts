@@ -6,7 +6,6 @@ import {TodoistSettings} from "../main";
 export async function updateFileFromServer(settings: TodoistSettings, app: App) {
 	await new Promise(r => setTimeout(r, 2000));
 
-	// todo wes test file name change
 	const openFile = app.workspace.getActiveFile();
 	if (settings.excludedDirectories.some(ed => openFile.path.contains(ed))) {
 		console.log("todoist text: not looking at file bc of excluded directories");
