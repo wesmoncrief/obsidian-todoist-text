@@ -1,6 +1,6 @@
 {
 	"name": "todoist-text",
-	"version": "1.0.1",
+	"version": "1.0.4",
 	"description": "This obsidian plugin integrates your Todoist tasks with markdown checkboxes.\n\n",
 	"main": "main.js",
 	"scripts": {
