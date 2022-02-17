@@ -6,17 +6,12 @@ import {TodoistSettings} from "../main";
 export async function updateFileFromServer(settings: TodoistSettings, app: App) {
 	await new Promise(r => setTimeout(r, 2000));
 
-	const openFile = app.workspace.getActiveFile();
-	if (settings.excludedDirectories.some(ed => openFile.path.contains(ed))) {
+	const file = app.workspace.getActiveFile();
+	if (settings.excludedDirectories.some(ed => file.path.contains(ed))) {
 		console.log("todoist text: not looking at file bc of excluded directories");
 		return;
 	}
 
-	const abstractFile = await app.vault.getAbstractFileByPath(openFile.path)
-	if (!(abstractFile instanceof TFile)) {
-		return;
-	}
-	const file = abstractFile as TFile;
 	const fileContents = await app.vault.read(file)
 	if (fileContents.contains(settings.templateString)) {
 		if (settings.authToken.contains("TODO - ")) {
