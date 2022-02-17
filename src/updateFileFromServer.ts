@@ -6,13 +6,14 @@ import {TodoistSettings} from "../main";
 export async function updateFileFromServer(settings: TodoistSettings, app: App) {
 	await new Promise(r => setTimeout(r, 2000));
 
-	const openFileName = app.workspace.getActiveFile().path;
-	if (settings.excludedDirectories.some(ed => openFileName.contains(ed))) {
+	// todo wes test file name change
+	const openFile = app.workspace.getActiveFile();
+	if (settings.excludedDirectories.some(ed => openFile.path.contains(ed))) {
 		console.log("todoist text: not looking at file bc of excluded directories");
 		return;
 	}
 
-	const abstractFile = await app.vault.getAbstractFileByPath(openFileName)
+	const abstractFile = await app.vault.getAbstractFileByPath(openFile.path)
 	if (!(abstractFile instanceof TFile)) {
 		return;
 	}
@@ -32,17 +33,18 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 export async function toggleServerTaskStatus(e: Editor, settings: TodoistSettings) {
 	try {
 		const lineText = e.getLine(e.getCursor().line);
-		if (!lineText.contains("[src](https://todoist.com/showTask?id=")) {
+		// The line must start with only whitespace, then have a dash. A currently checked off box
+		// can have any non-whitespace character. This matches the behavior of Obsidian's
+		// editor:toggle-checklist-status command.
+		const tryingToCloseRegex = /^\s*- \[\s]/;
+		const tryingToReOpenRegex = /^\s*- \[\S]/;
+		const tryingToClose = tryingToCloseRegex.test(lineText)
+		const tryingToReOpen = tryingToReOpenRegex.test(lineText)
+
+		if (!(lineText.contains("[src](https://todoist.com/showTask?id=") && tryingToClose || tryingToReOpen)) {
 			return;
 		}
 
-		const api = new TodoistApi(settings.authToken)
-		const tryingToClose = lineText.contains("- [ ]");
-		const tryingToOpen = lineText.contains("- [x]");
-		if ((tryingToClose && tryingToOpen) || (!tryingToClose && !tryingToOpen)) {
-			console.log("todoist err, file has both checked and unchecke brackets")
-			return;
-		}
 		let taskId: number;
 		try {
 			taskId = parseInt(lineText.split("https://todoist.com/showTask?id=")[1].split(")")[0]);
@@ -51,12 +53,13 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 			return;
 		}
 
+		const api = new TodoistApi(settings.authToken)
 		const serverTaskName = (await api.getTask(taskId)).content;
 		if (tryingToClose) {
 			await api.closeTask(taskId);
 			new Notice(`Todoist Text: Closed "${serverTaskName}" on Todoist`);
 		}
-		if (tryingToOpen) {
+		if (tryingToReOpen) {
 			await api.reopenTask(taskId);
 			new Notice(`Todoist Text: Re-opened "${serverTaskName}" on Todoist`);
 		}
@@ -78,7 +81,6 @@ async function getServerData(settings: TodoistSettings): Promise<string> {
 		console.log(errorMsg, e)
 		new Notice(errorMsg)
 	}
-	// todo consider sorting by priority
 	const formattedTasks = tasks.map(t => `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url})`);
 	return formattedTasks.join("\n");
 }

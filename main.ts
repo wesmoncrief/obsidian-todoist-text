@@ -29,9 +29,7 @@ export default class TodoistPlugin extends Plugin {
 			name: 'Toggle todoist task',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				toggleServerTaskStatus(editor, this.settings);
-				// I think this is undocumented API/usage. If so, should find another approach
-				// @ts-ignore
-				view.app.commands.findCommand("editor:toggle-checklist-status").editorCallback(editor, view)
+				view.app.commands.executeCommandById("editor:toggle-checklist-status")
 			}
 		});
 
