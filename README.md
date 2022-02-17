@@ -7,7 +7,7 @@ Demo: ![demo](obsidian-demo.gif)
 ## Usage
 1. Ensure you understand the security implications (see Security section of this file)
 2. Install the plugin (Todoist Text) through Obsidian
-3. Enable the plugin in Obsdidian
+3. Enable the plugin in Obsidian
 4. Go to the Todoist Text settings and enter your Todoist API token, as explained in the settings
 5. Configure a hotkey for checking off tasks (see below section)
 
