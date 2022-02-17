@@ -35,7 +35,7 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		const tryingToClose = tryingToCloseRegex.test(lineText)
 		const tryingToReOpen = tryingToReOpenRegex.test(lineText)
 
-		if (!(lineText.contains("[src](https://todoist.com/showTask?id=") && tryingToClose || tryingToReOpen)) {
+		if (!(lineText.contains("[src](https://todoist.com/showTask?id=")) && (tryingToClose || tryingToReOpen)) {
 			return;
 		}
 
