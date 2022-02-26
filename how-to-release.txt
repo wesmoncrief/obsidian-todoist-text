@@ -1,0 +1,6 @@
+from https://marcus.se.net/obsidian-plugin-docs/publishing/release-your-plugin-with-github-actions#use-standard-version-to-automatically-tag-your-release
+
+1. `npm run release`
+2. check the version it will produce. If it's not right, use `npm run release -- --release-as minor` or `npm run release -- --release-as major`
+3. `git push --follow-tags origin master`
+4. wait for github action to finish
