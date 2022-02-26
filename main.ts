@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: TodoistSettings = {
 
 export default class TodoistPlugin extends Plugin {
 	settings: TodoistSettings;
-
+	hasIntervalFailure: boolean = false;
 	async onload() {
 		await this.loadSettings();
 
@@ -44,11 +44,45 @@ export default class TodoistPlugin extends Plugin {
 
 
 		if (this.settings.enableAutomaticReplacement) {
-			this.registerEvent(this.app.workspace.on('file-open', () => updateFileFromServer(this.settings, this.app)));
+			this.registerEvent(this.app.workspace.on('file-open', async () => {
+				if (this.hasIntervalFailure) {
+					console.log("Todoist text: not checking for replacement keyword because of previous server " +
+						"failure. Either use the manual keyword, or restart the app.")
+					return;
+				}
+				try {
+					await updateFileFromServer(this.settings, this.app)
+				} catch {
+					this.hasIntervalFailure = true;
+				}
+			}));
 		}
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new TodoistPluginSettingTab(this.app, this));
+
+		/* This is in addition to the on file-open callback. This helps with
+				 1. manually adding the keyword to a new spot in a file
+				 2. when you make a setting change, such as changing your keyword
+			If this notices a keyword, it should wait at least 2 seconds before updating the text - this avoids a shocking
+			user experience.
+		 */
+		// 5 sec sleep because we want to ensure the file-open event finishes before this loop starts
+		await new Promise(r => setTimeout(r, 3000));
+		this.registerInterval(window.setInterval(() => this.updateFileFromServerIfEnabled(), 4 * 1000))
+	}
+
+
+	async updateFileFromServerIfEnabled() {
+		if (this.settings.enableAutomaticReplacement && !this.hasIntervalFailure) {
+			await new Promise(r => setTimeout(r, 2000));
+			try {
+				await updateFileFromServer(this.settings, this.app)
+			}
+			catch {
+				this.hasIntervalFailure = true;
+			}
+		}
 	}
 
 	onunload() {
@@ -85,7 +119,6 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 			span.innerText = 'This is your personal authentication token for Todoist. Be aware that anyone with this token ' +
 				'could access all of your Todoist data. This is stored in plain text in your .obsidian/plugins folder.' +
 				' Ensure that you are comfortable with the security implications before proceeding. ' +
-				'Restart Obsidian after updating this token. ' +
 				'You can get your token from the "API token" section ';
 
 			span.createEl("a", null, (link) => {
@@ -101,6 +134,8 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.authToken = value;
 					await this.plugin.saveSettings();
+					// give another chance for auto-updates to happen
+					this.plugin.hasIntervalFailure = false;
 				}));
 
 		const filterDescription = document.createDocumentFragment();
@@ -133,10 +168,9 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Enable automatic replacement of your key word with todos')
-			.setDesc("When enabled, any time the keyword is seen in a non-blacklisted file, it will be automatically " +
-				"replaced with your todos whenever the file is opened." +
-				" When disabled, you will have to manually use the 'Replace keyword with todos' command." +
-				" Restart Obsidian for changes to take effect.")
+			.setDesc("When enabled, any time the keyword is seen in a non-blacklisted file, it will be automatically" +
+				" replaced with your todos whenever the file is opened." +
+				" When disabled, you will have to manually use the 'Replace keyword with todos' command.")
 			.addToggle(t =>
 				t.setValue(this.plugin.settings.enableAutomaticReplacement)
 					.onChange(async (value) => {

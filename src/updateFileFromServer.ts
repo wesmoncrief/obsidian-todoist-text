@@ -1,11 +1,9 @@
 import {Task, TodoistApi} from '@doist/todoist-api-typescript'
-import {App, Editor, Notice, TFile} from 'obsidian'
+import {App, Editor, Notice, } from 'obsidian'
 import {TodoistSettings} from "../main";
 
 
 export async function updateFileFromServer(settings: TodoistSettings, app: App) {
-	await new Promise(r => setTimeout(r, 2000));
-
 	const file = app.workspace.getActiveFile();
 	if (settings.excludedDirectories.some(ed => file.path.contains(ed))) {
 		console.log("todoist text: not looking at file bc of excluded directories");
@@ -16,8 +14,11 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 	if (fileContents.contains(settings.templateString)) {
 		if (settings.authToken.contains("TODO - ")) {
 			new Notice("Todoist Text: You need to configure your Todoist API token in the Todoist Text plugin settings");
-			return;
+			throw("Todoist text: missing auth token.")
 		}
+		console.log("Todoist Text: Updating keyword with todos. If this happened automatically and you did not intend for this " +
+			"to happen, you should either disable automatic replacement of your key word with todos (via the settings), or" +
+			" exclude this file from auto replace (via the settings).")
 		const formattedTodos = await getServerData(settings)
 		const newData = fileContents.replace(settings.templateString, formattedTodos);
 		await app.vault.modify(file, newData)
@@ -71,9 +72,21 @@ async function getServerData(settings: TodoistSettings): Promise<string> {
 	try {
 		tasks = await api.getTasks({filter: settings.todoistQuery});
 	} catch (e) {
-		const errorMsg = `Todoist text: There was a problem pulling data from Todoist. ${e.responseData}`
-		console.log(errorMsg, e)
-		new Notice(errorMsg)
+		let errorMsg : string;
+		switch (e.httpStatusCode) {
+			case undefined:
+				errorMsg = `Todoist text: There was a problem pulling data from Todoist. Is your internet connection working?`
+				break;
+			case 403:
+				errorMsg ="Todoist text: Authentication with todoist server failed. Check that" +
+					" your API token is set correctly in the settings.";
+				break;
+			default:
+				`Todoist text: There was a problem pulling data from Todoist. ${e.responseData}`;
+		}
+		console.log(errorMsg, e);
+		new Notice(errorMsg);
+		throw(e)
 	}
 	const formattedTasks = tasks.map(t => `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url})`);
 	return formattedTasks.join("\n");
