@@ -38,7 +38,7 @@ This plugin currently does not support adding tasks to Todoist. Until then, I re
 This plugin stores your Todoist API token in plain text in your .obsidian/plugins folder. Anyone with your Todoist API token could access/manipulate all of your Todoist data. Ensure that you are not syncing/sharing your .obsidian/plugins folder for security purposes. Use this plugin at your own risk.
 
 ## Feature requests
-Please reach out (by filing a GitHub issue) if you'd like to discuss possible new features.
+Please reach out (by filing a GitHub issue) if you'd like to discuss possible new features or need help with anything! If you do see a github issue that already exists, feel free to comment on it, which could raise the priority/help inform how the feature is implemented
 
 ## Attribution
 I copied the 'folder suggest' settings feature from https://github.com/liamcain/obsidian-periodic-notes - thanks!
