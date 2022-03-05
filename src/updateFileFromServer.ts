@@ -5,7 +5,8 @@ import {TodoistSettings} from "./DefaultSettings";
 
 export async function updateFileFromServer(settings: TodoistSettings, app: App) {
 	const file = app.workspace.getActiveFile();
-	if (settings.excludedDirectories.some(ed => file.path.contains(ed))) {
+	// if length too short, probably didn't set the settings and just left the placeholder empty string
+	if (settings.excludedDirectories.filter(ed => ed.length > 1).some(ed => file.path.contains(ed))) {
 		console.log("todoist text: not looking at file bc of excluded directories");
 		return;
 	}

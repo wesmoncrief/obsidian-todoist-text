@@ -135,20 +135,16 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		const excludedFolderDescription = document.createDocumentFragment();
 		// todo re-write
 		excludedFolderDescription.append(
-			"It is useful to" +
-			" add your template file locations here, so that your template files will create files that can themselves" +
-			" pull down todos. ",
+			"If you use template files (e.g. for daily notes) and you want to use a keyword in that template file, this plugin would replace the keyword in your template file with Todos immediately, rendering the template useless.",
 			excludedFolderDescription.createEl("br"),
-			"If you use template files and you don't set their locations here, your template file " +
-			"itself will have convert its keyword into todos at the moment you open the template file."
+			"To prevent this, exclude the folder containing your template file.",
 		);
 		new Setting(this.containerEl).setDesc(excludedFolderDescription)
 
 		this.plugin.settings.excludedDirectories.forEach(
 			(dir, index) => {
 				new Setting(this.containerEl)
-					.setName("Excluded folders")
-					.setDesc("This folder will not work for replacing your key word with todos.")
+					.setName("Excluded folder")
 					.addSearch((cb) => {
 						new FolderSuggest(this.app, cb.inputEl);
 						cb.setPlaceholder("Example: folder1/folder2")
@@ -175,7 +171,6 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName("Add another excluded folder")
-			.setDesc("Add excluded folder")
 			.addButton((button: ButtonComponent) => {
 				button
 					.setButtonText("+")
