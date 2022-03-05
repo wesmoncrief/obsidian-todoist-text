@@ -1,24 +1,8 @@
 import {App, ButtonComponent, Editor, MarkdownView, Plugin, PluginSettingTab, Setting} from 'obsidian';
 import {toggleServerTaskStatus, updateFileFromServer} from "./src/updateFileFromServer";
 import {FolderSuggest} from "./src/suggest/folderSuggester";
-import {migrateSettings} from "./src/SettingsMigrator";
-
-// If you ever update these, be sure to update the settings migration too!
-export interface TodoistSettings {
-	settingsVersion: number;
-	excludedDirectories: string[];
-	keywordToTodoistQuery: { [key: string]: string };
-	authToken: string;
-	enableAutomaticReplacement: boolean;
-}
-
-export const DEFAULT_SETTINGS: TodoistSettings = {
-	settingsVersion: 1,
-	excludedDirectories: [],
-	keywordToTodoistQuery: { "@@TODOIST@@": "today|overdue"},
-	authToken: "TODO - get your auth token",
-	enableAutomaticReplacement: true
-}
+import {migrateSettings} from "./src/settingsMigrator";
+import {DEFAULT_SETTINGS, TodoistSettings} from "./src/DefaultSettings";
 
 export default class TodoistPlugin extends Plugin {
 	settings: TodoistSettings;
@@ -158,16 +142,54 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 				link.innerText = "as defined here.";
 			});
 		});
-		// new Setting(containerEl)
-		// 	.setName('Todoist Query')
-		// 	.setDesc(filterDescription)
-		// 	.addText(text => text
-		// 		.setValue(this.plugin.settings.todoistQuery)
-		// 		.onChange(async (value) => {
-		// 			this.plugin.settings.todoistQuery = value;
-		// 			await this.plugin.saveSettings();
-		// 		}));
 
+		this.plugin.settings.keywordToTodoistQuery.forEach(
+			(keywordToTodoistQuery, index) => {
+				new Setting(containerEl)
+					.setName('Todoist Query')
+					.setDesc(filterDescription)
+					.addText(text => text
+						.setValue(
+							this.plugin.settings.keywordToTodoistQuery[index].keyword
+						)
+						.onChange(async (value) => {
+							this.plugin.settings.keywordToTodoistQuery[index].keyword = value;
+							await this.plugin.saveSettings();
+						}))
+					.addText(text => text
+						.setValue(
+							this.plugin.settings.keywordToTodoistQuery[index].todoistQuery
+						)
+						.onChange(async (value) => {
+							this.plugin.settings.keywordToTodoistQuery[index].todoistQuery = value;
+							await this.plugin.saveSettings();
+						}))
+					.addExtraButton(eb => {
+						eb.setIcon("cross")
+							.setTooltip("Delete")
+							.onClick(async () => {
+								this.plugin.settings.keywordToTodoistQuery.splice(
+									index,
+									1
+								);
+								await this.plugin.saveSettings();
+								await this.display()
+							})
+					})
+			});
+
+		new Setting(this.containerEl)
+			.setName("Add another todoist query")
+			.addButton((button: ButtonComponent) => {
+				button
+					.setButtonText("+")
+					.setCta()
+					.onClick(async () => {
+						this.plugin.settings.keywordToTodoistQuery.push({keyword: "@@your_keyword_here@@", todoistQuery: "your_todoist_query_here"});
+						await this.plugin.saveSettings();
+						this.display();
+					});
+			});
 		// new Setting(containerEl)
 		// 	.setName('Template Keyword')
 		// 	.setDesc('This is the keyword that this plugin will replace with your todos from Todoist.')
@@ -177,6 +199,8 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		// 			this.plugin.settings.templateString = value;
 		// 			await this.plugin.saveSettings();
 		// 		}));
+
+		// todo add warning/stop if multiple same keywords?
 
 		new Setting(containerEl)
 			.setName('Enable automatic replacement of your key word with todos')

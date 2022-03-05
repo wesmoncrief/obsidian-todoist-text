@@ -1,6 +1,7 @@
-import {TodoistSettings} from "../main";
 
 // input is guaranteed to either be a valid older settings version, or the current default settings.
+import {TodoistSettings} from "./DefaultSettings";
+
 export function migrateSettings(settings: any) : TodoistSettings {
 	let newSettings : any = settings;
 	if (getSettingsVersion(newSettings) == 0) {
@@ -16,12 +17,11 @@ function getSettingsVersion(settings: any) : number {
 }
 
 function migrateToV1(settings: TodoistSettingV0) : TodoistSettings {
-	const oldTemplateString = settings.templateString;
 	return {
 		authToken: settings.authToken,
 		enableAutomaticReplacement: settings.enableAutomaticReplacement,
 		excludedDirectories: settings.excludedDirectories,
-		keywordToTodoistQuery: {oldTemplateString: settings.todoistQuery},
+		keywordToTodoistQuery: [{keyword: settings.templateString, todoistQuery: settings.todoistQuery}],
 		settingsVersion: 1
 	};
 }

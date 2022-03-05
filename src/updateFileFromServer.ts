@@ -1,6 +1,6 @@
 import {Task, TodoistApi} from '@doist/todoist-api-typescript'
 import {App, Editor, Notice, } from 'obsidian'
-import {TodoistSettings} from "../main";
+import {TodoistSettings} from "./DefaultSettings";
 
 
 export async function updateFileFromServer(settings: TodoistSettings, app: App) {
@@ -11,17 +11,19 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 	}
 
 	const fileContents = await app.vault.read(file)
-	if (fileContents.contains(settings.templateString)) {
-		if (settings.authToken.contains("TODO - ")) {
-			new Notice("Todoist Text: You need to configure your Todoist API token in the Todoist Text plugin settings");
-			throw("Todoist text: missing auth token.")
+	for (const keywordToQuery of settings.keywordToTodoistQuery) {
+		if (fileContents.contains(keywordToQuery.keyword)) {
+			if (settings.authToken.contains("TODO - ")) {
+				new Notice("Todoist Text: You need to configure your Todoist API token in the Todoist Text plugin settings");
+				throw("Todoist text: missing auth token.")
+			}
+			console.log("Todoist Text: Updating keyword with todos. If this happened automatically and you did not intend for this " +
+				"to happen, you should either disable automatic replacement of your key word with todos (via the settings), or" +
+				" exclude this file from auto replace (via the settings).")
+			const formattedTodos = await getServerData(keywordToQuery.todoistQuery, settings.authToken);
+			const newData = fileContents.replace(keywordToQuery.keyword, formattedTodos);
+			await app.vault.modify(file, newData)
 		}
-		console.log("Todoist Text: Updating keyword with todos. If this happened automatically and you did not intend for this " +
-			"to happen, you should either disable automatic replacement of your key word with todos (via the settings), or" +
-			" exclude this file from auto replace (via the settings).")
-		const formattedTodos = await getServerData(settings)
-		const newData = fileContents.replace(settings.templateString, formattedTodos);
-		await app.vault.modify(file, newData)
 	}
 }
 
@@ -66,11 +68,11 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 }
 
 
-async function getServerData(settings: TodoistSettings): Promise<string> {
-	const api = new TodoistApi(settings.authToken)
+async function getServerData(todoistQuery: string, authToken: string): Promise<string> {
+	const api = new TodoistApi(authToken)
 	let tasks: Task[];
 	try {
-		tasks = await api.getTasks({filter: settings.todoistQuery});
+		tasks = await api.getTasks({filter: todoistQuery});
 	} catch (e) {
 		let errorMsg : string;
 		switch (e.httpStatusCode) {
