@@ -1,20 +1,22 @@
 import {App, ButtonComponent, Editor, MarkdownView, Plugin, PluginSettingTab, Setting} from 'obsidian';
 import {toggleServerTaskStatus, updateFileFromServer} from "./src/updateFileFromServer";
 import {FolderSuggest} from "./src/suggest/folderSuggester";
+import {migrateSettings} from "./src/SettingsMigrator";
 
+// If you ever update these, be sure to update the settings migration too!
 export interface TodoistSettings {
-	enableAutomaticReplacement: boolean;
+	settingsVersion: number;
 	excludedDirectories: string[];
-	templateString: string;
+	keywordToTodoistQuery: { [key: string]: string };
 	authToken: string;
-	todoistQuery: string;
+	enableAutomaticReplacement: boolean;
 }
 
-const DEFAULT_SETTINGS: TodoistSettings = {
+export const DEFAULT_SETTINGS: TodoistSettings = {
+	settingsVersion: 1,
 	excludedDirectories: [],
-	templateString: "@@TODOIST@@",
+	keywordToTodoistQuery: { "@@TODOIST@@": "today|overdue"},
 	authToken: "TODO - get your auth token",
-	todoistQuery: "today|overdue",
 	enableAutomaticReplacement: true
 }
 
@@ -89,8 +91,18 @@ export default class TodoistPlugin extends Plugin {
 
 	}
 
+	/*
+	test cases:
+		- totally fresh install, no data.json
+		- v1 upgrade
+		- re-running v2 again
+		- carries over old settings
+		- applies new defaults
+	 */
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		let storedSettings = await this.loadData() ?? DEFAULT_SETTINGS;
+		this.settings = migrateSettings(storedSettings);
+		await this.saveSettings();
 	}
 
 	async saveSettings() {
@@ -146,25 +158,25 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 				link.innerText = "as defined here.";
 			});
 		});
-		new Setting(containerEl)
-			.setName('Todoist Query')
-			.setDesc(filterDescription)
-			.addText(text => text
-				.setValue(this.plugin.settings.todoistQuery)
-				.onChange(async (value) => {
-					this.plugin.settings.todoistQuery = value;
-					await this.plugin.saveSettings();
-				}));
+		// new Setting(containerEl)
+		// 	.setName('Todoist Query')
+		// 	.setDesc(filterDescription)
+		// 	.addText(text => text
+		// 		.setValue(this.plugin.settings.todoistQuery)
+		// 		.onChange(async (value) => {
+		// 			this.plugin.settings.todoistQuery = value;
+		// 			await this.plugin.saveSettings();
+		// 		}));
 
-		new Setting(containerEl)
-			.setName('Template Keyword')
-			.setDesc('This is the keyword that this plugin will replace with your todos from Todoist.')
-			.addText(text => text
-				.setValue(this.plugin.settings.templateString)
-				.onChange(async (value) => {
-					this.plugin.settings.templateString = value;
-					await this.plugin.saveSettings();
-				}));
+		// new Setting(containerEl)
+		// 	.setName('Template Keyword')
+		// 	.setDesc('This is the keyword that this plugin will replace with your todos from Todoist.')
+		// 	.addText(text => text
+		// 		.setValue(this.plugin.settings.templateString)
+		// 		.onChange(async (value) => {
+		// 			this.plugin.settings.templateString = value;
+		// 			await this.plugin.saveSettings();
+		// 		}));
 
 		new Setting(containerEl)
 			.setName('Enable automatic replacement of your key word with todos')
