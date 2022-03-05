@@ -11,9 +11,8 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 		return;
 	}
 
+	let fileContents = await app.vault.read(file)
 	for (const keywordToQuery of settings.keywordToTodoistQuery) {
-		// re-read file contents inside for loop to prevent reading/writing stale data
-		let fileContents = await app.vault.read(file)
 		// if length too short, probably didn't set the settings and just left the placeholder empty string
 		if (keywordToQuery.keyword.length > 1 && fileContents.contains(keywordToQuery.keyword)) {
 			if (settings.authToken.contains("TODO - ")) {
@@ -24,6 +23,9 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 				"to happen, you should either disable automatic replacement of your keyword with todos (via the settings), or" +
 				" exclude this file from auto replace (via the settings).")
 			const formattedTodos = await getServerData(keywordToQuery.todoistQuery, settings.authToken);
+
+			// re-read file contents to reduce race condition after slow server call
+			fileContents = await app.vault.read(file)
 			const newData = fileContents.replace(keywordToQuery.keyword, formattedTodos);
 			await app.vault.modify(file, newData)
 		}
