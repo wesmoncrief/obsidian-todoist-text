@@ -1,5 +1,3 @@
-
-// input is guaranteed to either be a valid older settings version, or the current default settings.
 import {TodoistSettings} from "./DefaultSettings";
 
 export function migrateSettings(settings: any) : TodoistSettings {
