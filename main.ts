@@ -75,14 +75,6 @@ export default class TodoistPlugin extends Plugin {
 
 	}
 
-	/*
-	test cases:
-		- totally fresh install, no data.json
-		- v1 upgrade
-		- re-running v2 again
-		- carries over old settings
-		- applies new defaults
-	 */
 	async loadSettings() {
 		let storedSettings = await this.loadData() ?? DEFAULT_SETTINGS;
 		this.settings = migrateSettings(storedSettings);
@@ -133,7 +125,6 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 	private addExcludedDirectoriesSetting(containerEl: HTMLElement) {
 		containerEl.createEl('h2', {text: 'Excluded folder'});
 		const excludedFolderDescription = document.createDocumentFragment();
-		// todo re-write
 		excludedFolderDescription.append(
 			"If you use template files (e.g. for daily notes) and you want to use a keyword in that template file, this plugin would replace the keyword in your template file with Todos immediately, rendering the template useless.",
 			excludedFolderDescription.createEl("br"),
