@@ -1,5 +1,5 @@
 import {migrateSettings} from "./settingsMigrator";
-import {DEFAULT_SETTINGS} from "./DefaultSettings";
+import {DEFAULT_SETTINGS, TodoistSettings} from "./DefaultSettings";
 
 test('v0 to v1 migration', () => {
 	const v0Settings = {
@@ -25,4 +25,15 @@ test('v0 to v1 migration', () => {
 
 test('v1 default to v1 migration', () => {
 	expect(migrateSettings(DEFAULT_SETTINGS)).toStrictEqual(DEFAULT_SETTINGS)
+})
+
+test('v1 custom to v1 migration', () => {
+	const v1alreadySetSettings: TodoistSettings = {
+		authToken: "some_auth_token",
+		enableAutomaticReplacement: false,
+		excludedDirectories: ["some_exc_dir"],
+		keywordToTodoistQuery: [{keyword: "key_a", todoistQuery: "query_a"}, {keyword: "key_b", todoistQuery: "query_b"}],
+		settingsVersion: 1
+	}
+	expect(migrateSettings(v1alreadySetSettings)).toStrictEqual(v1alreadySetSettings)
 })

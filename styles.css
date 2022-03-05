@@ -1,1 +1,12 @@
 /* file needs to exist for github release action to work */
+
+.todoist-setting-div > .setting-item > .setting-item-control {
+	justify-content: space-around;
+	padding: 0;
+	width: 100%;
+}
+
+/* todo enable CI */
+.todoist-query-setting {
+	width: 45%;
+}

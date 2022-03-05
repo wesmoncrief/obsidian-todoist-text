@@ -12,7 +12,8 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 
 	const fileContents = await app.vault.read(file)
 	for (const keywordToQuery of settings.keywordToTodoistQuery) {
-		if (fileContents.contains(keywordToQuery.keyword)) {
+		// if length too short, probably didn't set the settings and just left the placeholder empty string
+		if (keywordToQuery.keyword.length > 1 && fileContents.contains(keywordToQuery.keyword)) {
 			if (settings.authToken.contains("TODO - ")) {
 				new Notice("Todoist Text: You need to configure your Todoist API token in the Todoist Text plugin settings");
 				throw("Todoist text: missing auth token.")

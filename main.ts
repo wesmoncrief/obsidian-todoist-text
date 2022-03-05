@@ -108,105 +108,19 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl('h1', {text: 'Todoist Text'});
 		containerEl.createEl('a', {text: 'Important - see usage instructions', href: 'https://github.com/wesmoncrief/obsidian-todoist-text/tree/master#readme'});
-		containerEl.createEl('h2', {text: 'Settings'});
 
-		const tokenDescription = document.createDocumentFragment();
-		tokenDescription.createEl("span", null, (span) => {
-			span.innerText = 'This is your personal authentication token for Todoist. Be aware that anyone with this token ' +
-				'could access all of your Todoist data. This is stored in plain text in your .obsidian/plugins folder.' +
-				' Ensure that you are comfortable with the security implications before proceeding. ' +
-				'You can get your token from the "API token" section ';
+		this.addApiKeySetting(containerEl);
+		this.addEnableAutomaticReplacementSetting(containerEl);
+		this.addKeywordTodoistQuerySetting(containerEl);
+		this.addExcludedDirectoriesSetting(containerEl);
+	}
 
-			span.createEl("a", null, (link) => {
-				link.href = "https://todoist.com/prefs/integrations";
-				link.innerText = "here.";
-			});
-		});
+	private addEnableAutomaticReplacementSetting(containerEl: HTMLElement) {
 		new Setting(containerEl)
-			.setName('API token')
-			.setDesc(tokenDescription)
-			.addText(text => text
-				.setValue(this.plugin.settings.authToken)
-				.onChange(async (value) => {
-					this.plugin.settings.authToken = value;
-					await this.plugin.saveSettings();
-					// give another chance for auto-updates to happen
-					this.plugin.hasIntervalFailure = false;
-				}));
-
-		const filterDescription = document.createDocumentFragment();
-		filterDescription.createEl("span", null, (span) => {
-			span.innerText = 'This is the filter query used to pull your tasks. You can use filter definition supported by Todoist, ';
-			span.createEl("a", null, (link) => {
-				link.href = "https://todoist.com/help/articles/introduction-to-filters";
-				link.innerText = "as defined here.";
-			});
-		});
-
-		this.plugin.settings.keywordToTodoistQuery.forEach(
-			(keywordToTodoistQuery, index) => {
-				new Setting(containerEl)
-					.setName('Todoist Query')
-					.setDesc(filterDescription)
-					.addText(text => text
-						.setValue(
-							this.plugin.settings.keywordToTodoistQuery[index].keyword
-						)
-						.onChange(async (value) => {
-							this.plugin.settings.keywordToTodoistQuery[index].keyword = value;
-							await this.plugin.saveSettings();
-						}))
-					.addText(text => text
-						.setValue(
-							this.plugin.settings.keywordToTodoistQuery[index].todoistQuery
-						)
-						.onChange(async (value) => {
-							this.plugin.settings.keywordToTodoistQuery[index].todoistQuery = value;
-							await this.plugin.saveSettings();
-						}))
-					.addExtraButton(eb => {
-						eb.setIcon("cross")
-							.setTooltip("Delete")
-							.onClick(async () => {
-								this.plugin.settings.keywordToTodoistQuery.splice(
-									index,
-									1
-								);
-								await this.plugin.saveSettings();
-								await this.display()
-							})
-					})
-			});
-
-		new Setting(this.containerEl)
-			.setName("Add another todoist query")
-			.addButton((button: ButtonComponent) => {
-				button
-					.setButtonText("+")
-					.setCta()
-					.onClick(async () => {
-						this.plugin.settings.keywordToTodoistQuery.push({keyword: "@@your_keyword_here@@", todoistQuery: "your_todoist_query_here"});
-						await this.plugin.saveSettings();
-						this.display();
-					});
-			});
-		// new Setting(containerEl)
-		// 	.setName('Template Keyword')
-		// 	.setDesc('This is the keyword that this plugin will replace with your todos from Todoist.')
-		// 	.addText(text => text
-		// 		.setValue(this.plugin.settings.templateString)
-		// 		.onChange(async (value) => {
-		// 			this.plugin.settings.templateString = value;
-		// 			await this.plugin.saveSettings();
-		// 		}));
-
-		// todo add warning/stop if multiple same keywords?
-
-		new Setting(containerEl)
-			.setName('Enable automatic replacement of your key word with todos')
-			.setDesc("When enabled, any time the keyword is seen in a non-blacklisted file, it will be automatically" +
-				" replaced with your todos whenever the file is opened." +
-				" When disabled, you will have to manually use the 'Replace keyword with todos' command.")
+			.setName('Enable automatic replacement of keyword with Todos')
+			.setDesc("When enabled, any time a keyword is seen in a non-blacklisted file, it will be automatically" +
+				" replaced with your Todos whenever the file is opened." +
+				" When disabled, manually use the 'Replace keyword with todos' command to replace your keyword with Todos.")
 			.addToggle(t =>
 				t.setValue(this.plugin.settings.enableAutomaticReplacement)
 					.onChange(async (value) => {
@@ -214,16 +128,21 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 						}
 					));
+	}
 
+	private addExcludedDirectoriesSetting(containerEl: HTMLElement) {
 		containerEl.createEl('h2', {text: 'Excluded folder'});
-		const excludedFolderDescription = containerEl.createEl('h4', {
-			text:
-				"It is useful to" +
-				" add your template file locations here, so that your template files will create files that can themselves" +
-				" pull down todos. If you use template files, and you don't set their locations here, your template file " +
-				"itself will have convert its keyword into todos at the moment you open the template file."
-		});
-		excludedFolderDescription.style.fontWeight = "normal";
+		const excludedFolderDescription = document.createDocumentFragment();
+		// todo re-write
+		excludedFolderDescription.append(
+			"It is useful to" +
+			" add your template file locations here, so that your template files will create files that can themselves" +
+			" pull down todos. ",
+			excludedFolderDescription.createEl("br"),
+			"If you use template files and you don't set their locations here, your template file " +
+			"itself will have convert its keyword into todos at the moment you open the template file."
+		);
+		new Setting(this.containerEl).setDesc(excludedFolderDescription)
 
 		this.plugin.settings.excludedDirectories.forEach(
 			(dir, index) => {
@@ -238,8 +157,6 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 								this.plugin.settings.excludedDirectories[index] = new_folder;
 								await this.plugin.saveSettings();
 							});
-						// @ts-ignore
-						cb.containerEl.addClass("templater_search");
 					})
 					.addExtraButton(eb => {
 						eb.setIcon("cross")
@@ -269,5 +186,107 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 						this.display();
 					});
 			});
+	}
+
+	private addKeywordTodoistQuerySetting(containerEl: HTMLElement) {
+		// todo add warning/stop if multiple same keywords
+		containerEl.createEl('h2', {text: 'Keywords and Filter Definitions'});
+		const filterDescription = document.createDocumentFragment();
+		filterDescription.append('This plugin will find the specified keyword in a currently open file and replace ' +
+			'the keyword with your Todos. Your Todos will be pulled from Todoist based on the specified ',
+			containerEl.createEl("a", null, (link) => {
+				link.href = "https://todoist.com/help/articles/introduction-to-filters";
+				link.innerText = "filter definition.";
+			}),
+			containerEl.createEl("br"),
+			"Each keyword you use should be unique."
+		)
+		new Setting(containerEl).setDesc(filterDescription);
+
+		this.plugin.settings.keywordToTodoistQuery.forEach(
+			(keywordToTodoistQuery, index) => {
+				const div = this.containerEl.createEl("div");
+				div.addClass("todoist-setting-div");
+				new Setting(containerEl)
+					.addText(text => text
+						.setPlaceholder("@@TODOIST_KEYWORD@@")
+						.setValue(
+							this.plugin.settings.keywordToTodoistQuery[index].keyword
+						)
+						.onChange(async (value) => {
+							this.plugin.settings.keywordToTodoistQuery[index].keyword = value;
+							await this.plugin.saveSettings();
+						})
+						.inputEl.addClass("todoist-query-setting")
+					)
+					.addText(text => text
+						.setPlaceholder("today|overdue")
+						.setValue(
+							this.plugin.settings.keywordToTodoistQuery[index].todoistQuery
+						)
+						.onChange(async (value) => {
+							this.plugin.settings.keywordToTodoistQuery[index].todoistQuery = value;
+							await this.plugin.saveSettings();
+						})
+						.inputEl.addClass("todoist-query-setting")
+					)
+					.addExtraButton(eb => {
+						eb.setIcon("cross")
+							.setTooltip("Delete")
+							.onClick(async () => {
+								this.plugin.settings.keywordToTodoistQuery.splice(
+									index,
+									1
+								);
+								await this.plugin.saveSettings();
+								await this.display()
+							})
+					})
+				div.appendChild(this.containerEl.lastChild);
+			});
+
+
+		new Setting(this.containerEl)
+			.setName("Add another keyword and Todoist query")
+			.addButton((button: ButtonComponent) => {
+				button
+					.setButtonText("+")
+					.setCta()
+					.onClick(async () => {
+						this.plugin.settings.keywordToTodoistQuery.push({
+							keyword: "",
+							todoistQuery: ""
+						});
+						await this.plugin.saveSettings();
+						this.display();
+					});
+			});
+
+	}
+
+	private addApiKeySetting(containerEl: HTMLElement) {
+		const tokenDescription = document.createDocumentFragment();
+		tokenDescription.createEl("span", null, (span) => {
+			span.innerText = 'This is your personal authentication token for Todoist. Be aware that anyone with this token ' +
+				'could access all of your Todoist data. This is stored in plain text in your .obsidian/plugins folder.' +
+				' Ensure that you are comfortable with the security implications before proceeding. ' +
+				'You can get your token from the "API token" section ';
+
+			span.createEl("a", null, (link) => {
+				link.href = "https://todoist.com/prefs/integrations";
+				link.innerText = "here.";
+			});
+		});
+		new Setting(containerEl)
+			.setName('API token')
+			.setDesc(tokenDescription)
+			.addText(text => text
+				.setValue(this.plugin.settings.authToken)
+				.onChange(async (value) => {
+					this.plugin.settings.authToken = value;
+					await this.plugin.saveSettings();
+					// give another chance for auto-updates to happen
+					this.plugin.hasIntervalFailure = false;
+				}));
 	}
 }

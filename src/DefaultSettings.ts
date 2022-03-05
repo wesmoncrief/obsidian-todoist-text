@@ -1,4 +1,3 @@
-// If you ever update these, be sure to update the settings migration too!
 export interface TodoistSettings {
 	settingsVersion: number;
 	excludedDirectories: string[];
@@ -7,6 +6,8 @@ export interface TodoistSettings {
 	keywordToTodoistQuery: keywordTodoistQuery[];
 	authToken: string;
 	enableAutomaticReplacement: boolean;
+	// never rely on adding a new default value. Any change should entail bumping the settingsVersion
+	// and adding a settings migration
 }
 
 export interface keywordTodoistQuery {
