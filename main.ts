@@ -110,7 +110,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 	private addEnableAutomaticReplacementSetting(containerEl: HTMLElement) {
 		new Setting(containerEl)
 			.setName('Enable automatic replacement of keyword with Todos')
-			.setDesc("When enabled, any time a keyword is seen in a non-blacklisted file, it will be automatically" +
+			.setDesc("When enabled, any time a keyword is seen in a non-excluded file, it will be automatically" +
 				" replaced with your Todos whenever the file is opened." +
 				" When disabled, manually use the 'Replace keyword with todos' command to replace your keyword with Todos.")
 			.addToggle(t =>
