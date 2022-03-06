@@ -84,3 +84,4 @@ jobs:
                   upload_url: ${{ steps.create_release.outputs.upload_url }}
                   asset_path: ./styles.css
                   asset_name: styles.css
+                  asset_content_type: text/css
