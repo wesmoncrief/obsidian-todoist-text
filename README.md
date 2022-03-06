@@ -6,10 +6,9 @@ Demo: ![demo](obsidian-demo.gif)
 
 ## Usage
 1. Ensure you understand the security implications (see Security section of this file)
-2. Install the plugin (Todoist Text) through Obsidian
-3. Enable the plugin in Obsidian
-4. Go to the Todoist Text settings and enter your Todoist API token, as explained in the settings
-5. Configure a hotkey for checking off tasks (see below section)
+2. Install the plugin (Todoist Text) through Obsidian and enable it
+3. Go to the Todoist Text settings and enter your Todoist API token, as explained in the settings
+4. Configure a hotkey for checking off tasks (see below section)
 
 ### Marking tasks as complete and re-opening
 You will likely want to use the `<Cmd>-<Enter>` hot key to check off tasks. To do this, go to the Settings -> Hotkeys. Find the command "Todoist Text: Toggle todoist task". Set the hot key as desired. If you set the hot key to `<Cmd>-<Enter>`, be sure to remove `<Cmd>-<Enter>` from its default ("Toggle Checklist Status").
