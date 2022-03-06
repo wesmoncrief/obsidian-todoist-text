@@ -95,7 +95,11 @@ async function getServerData(todoistQuery: string, authToken: string): Promise<s
 		new Notice(errorMsg);
 		throw(e)
 	}
-	const formattedTasks = tasks.map(t => `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url})`);
+	const formattedTasks = tasks.map(t => {
+		const description = t.description.length === 0 ? "" :
+`\n\t- ${t.description.trim().replace(/(?:\r\n|\r|\n)+/g, '\n\t- ')}`;
+		return `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url}) ${description}`
+	})
 	return formattedTasks.join("\n");
 }
 
