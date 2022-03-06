@@ -1,22 +1,8 @@
 import {App, ButtonComponent, Editor, MarkdownView, Plugin, PluginSettingTab, Setting} from 'obsidian';
 import {toggleServerTaskStatus, updateFileFromServer} from "./src/updateFileFromServer";
 import {FolderSuggest} from "./src/suggest/folderSuggester";
-
-export interface TodoistSettings {
-	enableAutomaticReplacement: boolean;
-	excludedDirectories: string[];
-	templateString: string;
-	authToken: string;
-	todoistQuery: string;
-}
-
-const DEFAULT_SETTINGS: TodoistSettings = {
-	excludedDirectories: [],
-	templateString: "@@TODOIST@@",
-	authToken: "TODO - get your auth token",
-	todoistQuery: "today|overdue",
-	enableAutomaticReplacement: true
-}
+import {migrateSettings} from "./src/settingsMigrator";
+import {DEFAULT_SETTINGS, TodoistSettings} from "./src/DefaultSettings";
 
 export default class TodoistPlugin extends Plugin {
 	settings: TodoistSettings;
@@ -90,7 +76,9 @@ export default class TodoistPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		let storedSettings = await this.loadData() ?? DEFAULT_SETTINGS;
+		this.settings = migrateSettings(storedSettings);
+		await this.saveSettings();
 	}
 
 	async saveSettings() {
@@ -112,8 +100,157 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl('h1', {text: 'Todoist Text'});
 		containerEl.createEl('a', {text: 'Important - see usage instructions', href: 'https://github.com/wesmoncrief/obsidian-todoist-text/tree/master#readme'});
-		containerEl.createEl('h2', {text: 'Settings'});
 
+		this.addApiKeySetting(containerEl);
+		this.addEnableAutomaticReplacementSetting(containerEl);
+		this.addKeywordTodoistQuerySetting(containerEl);
+		this.addExcludedDirectoriesSetting(containerEl);
+	}
+
+	private addEnableAutomaticReplacementSetting(containerEl: HTMLElement) {
+		new Setting(containerEl)
+			.setName('Enable automatic replacement of keyword with Todos')
+			.setDesc("When enabled, any time a keyword is seen in a non-excluded file, it will be automatically" +
+				" replaced with your Todos whenever the file is opened." +
+				" When disabled, manually use the 'Replace keyword with todos' command to replace your keyword with Todos.")
+			.addToggle(t =>
+				t.setValue(this.plugin.settings.enableAutomaticReplacement)
+					.onChange(async (value) => {
+							this.plugin.settings.enableAutomaticReplacement = value;
+							await this.plugin.saveSettings();
+						}
+					));
+	}
+
+	private addExcludedDirectoriesSetting(containerEl: HTMLElement) {
+		containerEl.createEl('h2', {text: 'Excluded folder'});
+		const excludedFolderDescription = document.createDocumentFragment();
+		excludedFolderDescription.append(
+			"If you use template files (e.g. for daily notes) and you want to use a keyword in that template file, this plugin would replace the keyword in your template file with Todos immediately, rendering the template useless.",
+			excludedFolderDescription.createEl("br"),
+			"To prevent this, exclude the folder containing your template file.",
+		);
+		new Setting(this.containerEl).setDesc(excludedFolderDescription)
+
+		this.plugin.settings.excludedDirectories.forEach(
+			(dir, index) => {
+				new Setting(this.containerEl)
+					.setName("Excluded folder")
+					.addSearch((cb) => {
+						new FolderSuggest(this.app, cb.inputEl);
+						cb.setPlaceholder("Example: folder1/folder2")
+							.setValue(dir)
+							.onChange(async (new_folder) => {
+								this.plugin.settings.excludedDirectories[index] = new_folder;
+								await this.plugin.saveSettings();
+							});
+					})
+					.addExtraButton(eb => {
+						eb.setIcon("cross")
+							.setTooltip("Delete")
+							.onClick(async () => {
+								this.plugin.settings.excludedDirectories.splice(
+									index,
+									1
+								);
+								await this.plugin.saveSettings();
+								await this.display()
+							})
+					});
+			}
+		)
+
+		new Setting(this.containerEl)
+			.setName("Add another excluded folder")
+			.addButton((button: ButtonComponent) => {
+				button
+					.setButtonText("+")
+					.setCta()
+					.onClick(async () => {
+						this.plugin.settings.excludedDirectories.push("");
+						await this.plugin.saveSettings();
+						this.display();
+					});
+			});
+	}
+
+	private addKeywordTodoistQuerySetting(containerEl: HTMLElement) {
+		// todo add warning/stop if multiple same keywords
+		containerEl.createEl('h2', {text: 'Keywords and Filter Definitions'});
+		const filterDescription = document.createDocumentFragment();
+		filterDescription.append('This plugin will find the specified keyword in a currently open file and replace ' +
+			'the keyword with your Todos. Your Todos will be pulled from Todoist based on the specified ',
+			containerEl.createEl("a", null, (link) => {
+				link.href = "https://todoist.com/help/articles/introduction-to-filters";
+				link.innerText = "filter definition.";
+			}),
+			containerEl.createEl("br"),
+			"Each keyword you use should be unique."
+		)
+		new Setting(containerEl).setDesc(filterDescription);
+
+		this.plugin.settings.keywordToTodoistQuery.forEach(
+			(keywordToTodoistQuery, index) => {
+				const div = this.containerEl.createEl("div");
+				div.addClass("todoist-setting-div");
+				new Setting(containerEl)
+					.addText(text => text
+						.setPlaceholder("@@TODOIST_KEYWORD@@")
+						.setValue(
+							this.plugin.settings.keywordToTodoistQuery[index].keyword
+						)
+						.onChange(async (value) => {
+							this.plugin.settings.keywordToTodoistQuery[index].keyword = value;
+							await this.plugin.saveSettings();
+						})
+						.inputEl.addClass("todoist-query-setting")
+					)
+					.addText(text => text
+						.setPlaceholder("today|overdue")
+						.setValue(
+							this.plugin.settings.keywordToTodoistQuery[index].todoistQuery
+						)
+						.onChange(async (value) => {
+							this.plugin.settings.keywordToTodoistQuery[index].todoistQuery = value;
+							await this.plugin.saveSettings();
+						})
+						.inputEl.addClass("todoist-query-setting")
+					)
+					.addExtraButton(eb => {
+						eb.setIcon("cross")
+							.setTooltip("Delete")
+							.onClick(async () => {
+								this.plugin.settings.keywordToTodoistQuery.splice(
+									index,
+									1
+								);
+								await this.plugin.saveSettings();
+								await this.display()
+							})
+					})
+				div.appendChild(this.containerEl.lastChild);
+			});
+
+
+		new Setting(this.containerEl)
+			.setName("Add another keyword and Todoist query")
+			.addButton((button: ButtonComponent) => {
+				button
+					.setButtonText("+")
+					.setCta()
+					.onClick(async () => {
+						this.plugin.settings.keywordToTodoistQuery.push({
+							keyword: "",
+							todoistQuery: ""
+						});
+						await this.plugin.saveSettings();
+						this.display();
+					});
+			});
+
+	}
+
+	private addApiKeySetting(containerEl: HTMLElement) {
 		const tokenDescription = document.createDocumentFragment();
 		tokenDescription.createEl("span", null, (span) => {
 			span.innerText = 'This is your personal authentication token for Todoist. Be aware that anyone with this token ' +
@@ -137,101 +274,5 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 					// give another chance for auto-updates to happen
 					this.plugin.hasIntervalFailure = false;
 				}));
-
-		const filterDescription = document.createDocumentFragment();
-		filterDescription.createEl("span", null, (span) => {
-			span.innerText = 'This is the filter query used to pull your tasks. You can use filter definition supported by Todoist, ';
-			span.createEl("a", null, (link) => {
-				link.href = "https://todoist.com/help/articles/introduction-to-filters";
-				link.innerText = "as defined here.";
-			});
-		});
-		new Setting(containerEl)
-			.setName('Todoist Query')
-			.setDesc(filterDescription)
-			.addText(text => text
-				.setValue(this.plugin.settings.todoistQuery)
-				.onChange(async (value) => {
-					this.plugin.settings.todoistQuery = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Template Keyword')
-			.setDesc('This is the keyword that this plugin will replace with your todos from Todoist.')
-			.addText(text => text
-				.setValue(this.plugin.settings.templateString)
-				.onChange(async (value) => {
-					this.plugin.settings.templateString = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Enable automatic replacement of your key word with todos')
-			.setDesc("When enabled, any time the keyword is seen in a non-blacklisted file, it will be automatically" +
-				" replaced with your todos whenever the file is opened." +
-				" When disabled, you will have to manually use the 'Replace keyword with todos' command.")
-			.addToggle(t =>
-				t.setValue(this.plugin.settings.enableAutomaticReplacement)
-					.onChange(async (value) => {
-							this.plugin.settings.enableAutomaticReplacement = value;
-							await this.plugin.saveSettings();
-						}
-					));
-
-		containerEl.createEl('h2', {text: 'Excluded folder'});
-		const excludedFolderDescription = containerEl.createEl('h4', {
-			text:
-				"It is useful to" +
-				" add your template file locations here, so that your template files will create files that can themselves" +
-				" pull down todos. If you use template files, and you don't set their locations here, your template file " +
-				"itself will have convert its keyword into todos at the moment you open the template file."
-		});
-		excludedFolderDescription.style.fontWeight = "normal";
-
-		this.plugin.settings.excludedDirectories.forEach(
-			(dir, index) => {
-				new Setting(this.containerEl)
-					.setName("Excluded folders")
-					.setDesc("This folder will not work for replacing your key word with todos.")
-					.addSearch((cb) => {
-						new FolderSuggest(this.app, cb.inputEl);
-						cb.setPlaceholder("Example: folder1/folder2")
-							.setValue(dir)
-							.onChange(async (new_folder) => {
-								this.plugin.settings.excludedDirectories[index] = new_folder;
-								await this.plugin.saveSettings();
-							});
-						// @ts-ignore
-						cb.containerEl.addClass("templater_search");
-					})
-					.addExtraButton(eb => {
-						eb.setIcon("cross")
-							.setTooltip("Delete")
-							.onClick(async () => {
-								this.plugin.settings.excludedDirectories.splice(
-									index,
-									1
-								);
-								await this.plugin.saveSettings();
-								await this.display()
-							})
-					});
-			}
-		)
-
-		new Setting(this.containerEl)
-			.setName("Add another excluded folder")
-			.setDesc("Add excluded folder")
-			.addButton((button: ButtonComponent) => {
-				button
-					.setButtonText("+")
-					.setCta()
-					.onClick(async () => {
-						this.plugin.settings.excludedDirectories.push("");
-						await this.plugin.saveSettings();
-						this.display();
-					});
-			});
 	}
 }
