@@ -10,14 +10,14 @@ test('v0 to v1 migration', () => {
 		enableAutomaticReplacement: false
 	}
 	const latestSettings = {
-		"authToken": "old_auth_token",
+		authToken: "old_auth_token",
 		"enableAutomaticReplacement": false,
 		"excludedDirectories": [
 			"old_exc_dir"
 		],
-		"keywordToTodoistQuery": {
-			"oldTemplateString": "old_todoist_query"
-		},
+		"keywordToTodoistQuery": [
+			{"keyword": "old_custom_template", "todoistQuery": "old_todoist_query"},
+		],
 		"settingsVersion": 1
 	}
 	expect(migrateSettings(v0Settings)).toStrictEqual(latestSettings);
