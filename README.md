@@ -2,7 +2,7 @@
 
 This obsidian plugin integrates your Todoist tasks with markdown checkboxes in a text-centric approach.
 
-Demo: ![demo](demo.gif)
+Demo: ![demo](https://raw.githubusercontent.com/wesmoncrief/obsidian-todoist-text/master/demo.gif)
 
 # Usage
 1. Ensure you understand the security implications (see Security section of this file)
