@@ -14,7 +14,8 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 	let fileContents = await app.vault.read(file)
 	for (const keywordToQuery of settings.keywordToTodoistQuery) {
 		// if length too short, probably didn't set the settings and just left the placeholder empty string
-		if (keywordToQuery.keyword.length > 1 && fileContents.contains(keywordToQuery.keyword)) {
+		// If you wanted to pull all tasks, you can always use `view all` filter definition.
+		if (keywordToQuery.keyword.length > 1 && keywordToQuery.todoistQuery.length > 1 && fileContents.contains(keywordToQuery.keyword)) {
 			if (settings.authToken.contains("TODO - ")) {
 				new Notice("Todoist Text: You need to configure your Todoist API token in the Todoist Text plugin settings");
 				throw("Todoist text: missing auth token.")
@@ -94,6 +95,9 @@ async function getServerData(todoistQuery: string, authToken: string): Promise<s
 		console.log(errorMsg, e);
 		new Notice(errorMsg);
 		throw(e)
+	}
+	if (tasks.length === 0){
+		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
 	}
 	const formattedTasks = tasks.map(t => {
 		const description = t.description.length === 0 ? "" :
