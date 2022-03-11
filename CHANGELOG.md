@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.2](https://github.com/wesmoncrief/obsidian-todoist-text/compare/1.3.1...1.3.2) (2022-03-11)
+
+
+### Bug Fixes
+
+* Notification if no tasks match a filter ([91ca545](https://github.com/wesmoncrief/obsidian-todoist-text/commit/91ca54505fe551b875ad97e1c6f9fc9cbc0f2e57))
+
 ### [1.3.1](https://github.com/wesmoncrief/obsidian-todoist-text/compare/1.3.0...1.3.1) (2022-03-07)
 
 
