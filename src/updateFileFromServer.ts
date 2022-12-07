@@ -48,9 +48,9 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 			return;
 		}
 
-		let taskId: number;
+		let taskId: string;
 		try {
-			taskId = parseInt(lineText.split("https://todoist.com/showTask?id=")[1].split(")")[0]);
+			taskId = lineText.split("https://todoist.com/showTask?id=")[1].split(")")[0];
 		} catch (e) {
 			console.log(e)
 			return;
