@@ -76,9 +76,38 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 
 async function getServerData(todoistQuery: string, authToken: string): Promise<string> {
 	const api = new TodoistApi(authToken)
+
+	const tasks = await callTasksApi(api, todoistQuery);
+	const subtasks = await callTasksApi(api, 'subtask');
+
+	if (tasks.length === 0){
+		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
+	}
+	const formattedTasks = tasks.map(t => {
+
+		const description = t.description.length === 0 ? "" :
+`\n\t- ${t.description.trim().replace(/(?:\r\n|\r|\n)+/g, '\n\t- ')}`;
+
+		let filtered = subtasks.filter(sub => sub.parentId == t.id);
+		if (filtered.length === 0) {
+			return `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url}) ${description}`
+		} else {
+			let returnString = `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url}) ${description}`;
+
+			filtered.map(st => {
+				returnString = returnString.concat(`\n\t- [ ] ${st.content} -- p${st.priority} -- [src](${st.url}) ${description}`);
+			})
+			return returnString;
+		}
+
+	})
+	return formattedTasks.join("\n");
+}
+
+async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
 	let tasks: Task[];
 	try {
-		tasks = await api.getTasks({filter: todoistQuery});
+		tasks = await api.getTasks({filter: filter});
 	} catch (e) {
 		let errorMsg : string;
 		switch (e.httpStatusCode) {
@@ -96,14 +125,6 @@ async function getServerData(todoistQuery: string, authToken: string): Promise<s
 		new Notice(errorMsg);
 		throw(e)
 	}
-	if (tasks.length === 0){
-		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
-	}
-	const formattedTasks = tasks.map(t => {
-		const description = t.description.length === 0 ? "" :
-`\n\t- ${t.description.trim().replace(/(?:\r\n|\r|\n)+/g, '\n\t- ')}`;
-		return `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url}) ${description}`
-	})
-	return formattedTasks.join("\n");
+	return tasks;
 }
 
