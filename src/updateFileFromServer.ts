@@ -84,24 +84,13 @@ async function getServerData(todoistQuery: string, authToken: string): Promise<s
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
 	}
 	const formattedTasks = tasks.map(t => {
-
-		const description = t.description.length === 0 ? "" :
-`\n\t- ${t.description.trim().replace(/(?:\r\n|\r|\n)+/g, '\n\t- ')}`;
-
-		let filtered = subtasks.filter(sub => sub.parentId == t.id);
-		if (filtered.length === 0) {
-			return `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url}) ${description}`
-		} else {
-			let returnString = `- [ ] ${t.content} -- p${t.priority} -- [src](${t.url}) ${description}`;
-
-			filtered.map(st => {
-				returnString = returnString.concat(`\n\t- [ ] ${st.content} -- p${st.priority} -- [src](${st.url}) ${description}`);
-			})
-			return returnString;
-		}
-
+		let returnString = ""
+		returnString = returnString.concat(getFormattedTaskDetail(t, 0));
+		
+		returnString = returnString.concat(getSubTasks(subtasks, t.id, 1));
+		return returnString;
 	})
-	return formattedTasks.join("\n");
+	return formattedTasks.join("\n")
 }
 
 async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
@@ -128,3 +117,26 @@ async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
 	return tasks;
 }
 
+function getSubTasks(subtasks: Task[], parentId: string, indent: number): string {
+	let returnString = "";
+	let filtered = subtasks.filter(sub => sub.parentId == parentId);
+	if (filtered.length > 0) {
+		filtered.map(st => {
+			returnString = returnString.concat(getFormattedTaskDetail(st, indent));
+			returnString = returnString.concat(getSubTasks(subtasks, st.id ,indent+1))
+		})
+	}
+	return returnString;
+}
+
+function getFormattedTaskDetail(task: Task, indent: number): string {	
+	let description = getTaskDescription(task.description, indent);
+	let tabs = "\t".repeat(indent);
+	let addnewline = indent > 0 ? `\n` : "";
+	return `${addnewline}${tabs}- [ ] ${task.content} -- p${task.priority} -- [src](${task.url}) ${description}`;
+}
+
+function getTaskDescription(description: string, indent: number): string {
+	let tabs = "\t".repeat(indent);
+	return description.length === 0 ? "" : `\n${tabs}\t- ${description.trim().replace(/(?:\r\n|\r|\n)+/g, '\n\t- ')}`;
+}
