@@ -103,6 +103,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 		this.addApiKeySetting(containerEl);
 		this.addEnableAutomaticReplacementSetting(containerEl);
+		this.addIncludeSubttasksSetting(containerEl);
 		this.addKeywordTodoistQuerySetting(containerEl);
 		this.addExcludedDirectoriesSetting(containerEl);
 	}
@@ -117,6 +118,19 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 				t.setValue(this.plugin.settings.enableAutomaticReplacement)
 					.onChange(async (value) => {
 							this.plugin.settings.enableAutomaticReplacement = value;
+							await this.plugin.saveSettings();
+						}
+					));
+	}
+
+	private addIncludeSubttasksSetting(containerEl: HTMLElement) {
+		new Setting(containerEl)
+			.setName('Enable Subtasks')
+			.setDesc("When enabled, any Subtasks associated with Todos meeting filter criteria from your keyword will be shown, indented, under the parent Todo.")
+			.addToggle(t =>
+				t.setValue(this.plugin.settings.showSubtasks)
+					.onChange(async (value) => {
+							this.plugin.settings.showSubtasks = value;
 							await this.plugin.saveSettings();
 						}
 					));

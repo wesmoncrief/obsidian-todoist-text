@@ -33,7 +33,9 @@ test('v1 custom to v1 migration', () => {
 		enableAutomaticReplacement: false,
 		excludedDirectories: ["some_exc_dir"],
 		keywordToTodoistQuery: [{keyword: "key_a", todoistQuery: "query_a"}, {keyword: "key_b", todoistQuery: "query_b"}],
-		settingsVersion: 1
+		settingsVersion: 1,
+		showSubtasks: true
 	}
 	expect(migrateSettings(v1alreadySetSettings)).toStrictEqual(v1alreadySetSettings)
 })
+
