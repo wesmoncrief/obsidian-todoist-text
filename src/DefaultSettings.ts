@@ -6,6 +6,7 @@ export interface TodoistSettings {
 	keywordToTodoistQuery: keywordTodoistQuery[];
 	authToken: string;
 	enableAutomaticReplacement: boolean;
+	showSubtasks: boolean;
 	// never rely on adding a new default value. Any change should entail bumping the settingsVersion
 	// and adding a settings migration
 }
@@ -16,9 +17,10 @@ export interface keywordTodoistQuery {
 }
 
 export const DEFAULT_SETTINGS: TodoistSettings = {
-	settingsVersion: 1,
+	settingsVersion: 2,
 	excludedDirectories: [],
 	keywordToTodoistQuery: [{keyword: "@@TODOIST@@", todoistQuery: "today|overdue"}],
 	authToken: "TODO - get your auth token",
-	enableAutomaticReplacement: true
+	enableAutomaticReplacement: true,
+	showSubtasks: true
 }
