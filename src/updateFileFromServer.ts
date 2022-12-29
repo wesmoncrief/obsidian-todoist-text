@@ -77,8 +77,12 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 	const api = new TodoistApi(authToken)
 
 	const tasks = await callTasksApi(api, todoistQuery);
-	const subtasks = await callTasksApi(api, 'subtask');
 
+	let subtasks: Task[];
+	if (showSubtasks) {
+		subtasks = await callTasksApi(api, 'subtask');
+	}
+	
 	if (tasks.length === 0){
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
 	}
