@@ -87,8 +87,7 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
 	}
 	const formattedTasks = tasks.map(t => {
-		let returnString = ""
-		returnString = returnString.concat(getFormattedTaskDetail(t, 0));
+		let returnString = getFormattedTaskDetail(t, 0);
 		
 		if (showSubtasks) {
 			returnString = returnString.concat(getSubTasks(subtasks, t.id, 1));
@@ -126,12 +125,10 @@ async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
 function getSubTasks(subtasks: Task[], parentId: string, indent: number): string {
 	let returnString = "";
 	let filtered = subtasks.filter(sub => sub.parentId == parentId);
-	if (filtered.length > 0) {
-		filtered.map(st => {
-			returnString = returnString.concat(getFormattedTaskDetail(st, indent));
-			returnString = returnString.concat(getSubTasks(subtasks, st.id ,indent+1))
-		})
-	}
+	filtered.forEach(st => {
+		returnString = returnString.concat(getFormattedTaskDetail(st, indent));
+		returnString = returnString.concat(getSubTasks(subtasks, st.id ,indent+1))
+	})
 	return returnString;
 }
 
