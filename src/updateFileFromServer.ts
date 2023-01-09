@@ -60,11 +60,60 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		const serverTaskName = (await api.getTask(taskId)).content;
 		if (tryingToClose) {
 			await api.closeTask(taskId);
-			new Notice(`Todoist Text: Closed "${serverTaskName}" on Todoist`);
+			
+			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
+
+			// check if there are any subtasks and mark them closed
+			let subtasksClosed = 0;
+			for (let line = e.getCursor().line + 1; line < e.lineCount(); line++) {
+				const lineText = e.getLine(line);
+				const tabCount = lineText.split(/[^\t]/)[0].length;
+				if (tabCount==0) break;
+
+				if (tabCount > actionedTaskTabCount) {
+					const replacedText = lineText.replace("- [ ]", "- [x]");
+					if (replacedText != lineText) { subtasksClosed++};
+					e.setLine(line, replacedText);
+				}
+			}
+			
+			// advise user task is closed, along with any subtasks if they were found
+			let taskClosedMessage = `Todoist Text: Closed "${serverTaskName}" on Todoist`;
+			if (subtasksClosed > 0) {
+				const plural = subtasksClosed == 1 ? "" : "s";
+				taskClosedMessage = taskClosedMessage + ` and ${subtasksClosed} subtask${plural}.`;
+			}
+			new Notice(taskClosedMessage);
 		}
+
 		if (tryingToReOpen) {
 			await api.reopenTask(taskId);
-			new Notice(`Todoist Text: Re-opened "${serverTaskName}" on Todoist`);
+
+			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
+			
+			// check if there are any parent tasks and mark them opened
+			let parentTasksOpened = 0;
+			for (let line = e.getCursor().line - 1; line > 1; line--) {
+				const lineText = e.getLine(line);
+				const tabCount = lineText.split(/[^\t]/)[0].length;
+
+				if (tabCount < actionedTaskTabCount) {
+					const replacedText = lineText.replace("- [X]", "- [ ]").replace("- [x]", "- [ ]");
+					if (replacedText != lineText) { parentTasksOpened++};
+					e.setLine(line, replacedText);
+				}
+
+				if (tabCount==0 && parentTasksOpened > 0) break; // found the topmost task
+			}
+
+			// advise user task is open, along with any parent tasks if they were found
+			let taskOpenedMessage = `Todoist Text: Re-opened "${serverTaskName}" on Todoist`;
+			if (parentTasksOpened > 0) {
+				const plural = parentTasksOpened == 1 ? "" : "s";
+				taskOpenedMessage = taskOpenedMessage + ` and its parent task${plural}.`;
+			}
+			new Notice(taskOpenedMessage);
+
 		}
 	}
 	catch (e){
