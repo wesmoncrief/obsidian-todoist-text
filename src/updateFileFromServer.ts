@@ -130,16 +130,35 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 	if (tasks.length === 0){
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
 	}
+	
 	let returnString = "";
 	if (showSubtasks) {
+		// work through all the parent tasks
 		let parentTasks = tasks.filter(task => task.parentId == null);
 		parentTasks.forEach(task => {
-			returnString = returnString.concat(getFormattedTaskDetail(task, 0));
+			returnString = returnString.concat(getFormattedTaskDetail(task, 0, false));
 			returnString = returnString.concat(getSubTasks(tasks, task.id, 1));
-		})		
+		})
+
+		// display subtasks that have a parent that wasn't returned in the query
+		let orphans:Task[] = [];
+		let subtasks = tasks.filter(task => task.parentId != null);
+		subtasks.forEach(st => {
+			if (tasks.filter(task => task.id == st.parentId).length == 0) {
+				orphans.push(st);
+			}
+		})
+
+		// show the orphaned subtasks with a subtask indicator
+		orphans.forEach(task => {
+			returnString = returnString.concat(getFormattedTaskDetail(task, 0, true));
+			returnString = returnString.concat(getSubTasks(tasks, task.id, 1));
+		})
+
 	} else {
 		tasks.forEach(t => {
-			returnString = returnString.concat(getFormattedTaskDetail(t, 0));
+			// show the tasks, inlcude a subtask indicator (since subtask display is disabled)
+			returnString = returnString.concat(getFormattedTaskDetail(t, 0, true));
 		})
 	}
 
@@ -174,13 +193,13 @@ function getSubTasks(subtasks: Task[], parentId: string, indent: number): string
 	let returnString = "";
 	let filtered = subtasks.filter(sub => sub.parentId == parentId);
 	filtered.forEach(st => {
-		returnString = returnString.concat(getFormattedTaskDetail(st, indent));
+		returnString = returnString.concat(getFormattedTaskDetail(st, indent, false));
 		returnString = returnString.concat(getSubTasks(subtasks, st.id ,indent+1))
 	})
 	return returnString;
 }
 
-function getFormattedTaskDetail(task: Task, indent: number): string {	
+function getFormattedTaskDetail(task: Task, indent: number, showSubtaskSymbol: boolean): string {	
 	let description = getTaskDescription(task.description, indent);
 	let tabs = "\t".repeat(indent);
 
@@ -192,7 +211,12 @@ function getFormattedTaskDetail(task: Task, indent: number): string {
 		[4, 1]
 	])
 
-	return `${tabs}- [ ] ${task.content} -- p${priorityMap.get(task.priority)} -- [src](${task.url}) ${description}\n`;
+	let subtaskIndicator = "";
+	if (showSubtaskSymbol && task.parentId != null) {
+		subtaskIndicator = "⮑ ";
+	}
+
+	return `${tabs}- [ ] ${subtaskIndicator}${task.content} -- p${priorityMap.get(task.priority)} -- [src](${task.url}) ${description}\n`;
 }
 
 function getTaskDescription(description: string, indent: number): string {
