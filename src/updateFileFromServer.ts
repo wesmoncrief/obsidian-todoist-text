@@ -140,14 +140,9 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 			returnString = returnString.concat(getSubTasks(tasks, task.id, 1));
 		})
 
-		// display subtasks that have a parent that wasn't returned in the query
-		let orphans:Task[] = [];
+		// determine subtasks that have a parent that wasn't returned in the query
 		let subtasks = tasks.filter(task => task.parentId != null);
-		subtasks.forEach(st => {
-			if (tasks.filter(task => task.id == st.parentId).length == 0) {
-				orphans.push(st);
-			}
-		})
+		const orphans = subtasks.filter(st => !parentTasks.contains(st));
 
 		// show the orphaned subtasks with a subtask indicator
 		orphans.forEach(task => {
@@ -211,10 +206,7 @@ function getFormattedTaskDetail(task: Task, indent: number, showSubtaskSymbol: b
 		[4, 1]
 	])
 
-	let subtaskIndicator = "";
-	if (showSubtaskSymbol && task.parentId != null) {
-		subtaskIndicator = "⮑ ";
-	}
+	const subtaskIndicator = (showSubtaskSymbol && task.parentId != null) ? "⮑ " : "";
 
 	return `${tabs}- [ ] ${subtaskIndicator}${task.content} -- p${priorityMap.get(task.priority)} -- [src](${task.url}) ${description}\n`;
 }
