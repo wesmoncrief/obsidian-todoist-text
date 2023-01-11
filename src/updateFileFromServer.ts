@@ -23,7 +23,7 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 			console.log("Todoist Text: Updating keyword with todos. If this happened automatically and you did not intend for this " +
 				"to happen, you should either disable automatic replacement of your keyword with todos (via the settings), or" +
 				" exclude this file from auto replace (via the settings).")
-			const formattedTodos = await getServerData(keywordToQuery.todoistQuery, settings.authToken, settings.showSubtasks);
+			const formattedTodos = await getServerData(keywordToQuery.todoistQuery, settings.authToken);
 
 			// re-read file contents to reduce race condition after slow server call
 			fileContents = await app.vault.read(file)
@@ -73,7 +73,7 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 	}
 }
 
-async function getServerData(todoistQuery: string, authToken: string, showSubtasks: boolean): Promise<string> {
+async function getServerData(todoistQuery: string, authToken: string): Promise<string> {
 	const api = new TodoistApi(authToken)
 
 	const tasks = await callTasksApi(api, todoistQuery);
@@ -86,10 +86,7 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 		let returnString = ""
 		returnString = returnString.concat(getFormattedTaskDetail(t, 0));
 		
-		if (showSubtasks) {
-			returnString = returnString.concat(getSubTasks(subtasks, t.id, 1));
-		}
-		
+		returnString = returnString.concat(getSubTasks(subtasks, t.id, 1));
 		return returnString;
 	})
 	return formattedTasks.join("\n")
