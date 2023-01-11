@@ -77,24 +77,25 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 	const api = new TodoistApi(authToken)
 
 	const tasks = await callTasksApi(api, todoistQuery);
+
+	let subtasks: Task[];
+	if (showSubtasks) {
+		subtasks = await callTasksApi(api, 'subtask');
+	}
 	
 	if (tasks.length === 0){
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
 	}
-	let returnString = "";
-	if (showSubtasks) {
-		let parentTasks = tasks.filter(task => task.parentId == null);
-		parentTasks.forEach(task => {
-			returnString = returnString.concat(getFormattedTaskDetail(task, 0));
-			returnString = returnString.concat(getSubTasks(tasks, task.id, 1));
-		})		
-	} else {
-		tasks.forEach(t => {
-			returnString = returnString.concat(getFormattedTaskDetail(t, 0));
-		})
-	}
-
-	return returnString;
+	const formattedTasks = tasks.map(t => {
+		let returnString = getFormattedTaskDetail(t, 0);
+		
+		if (showSubtasks) {
+			returnString = returnString.concat(getSubTasks(subtasks, t.id, 1));
+		}
+		
+		return returnString;
+	})
+	return formattedTasks.join("\n")
 }
 
 async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
@@ -143,7 +144,8 @@ function getFormattedTaskDetail(task: Task, indent: number): string {
 		[4, 1]
 	])
 
-	return `${tabs}- [ ] ${task.content} -- p${priorityMap.get(task.priority)} -- [src](${task.url}) ${description}\n`;
+	let addnewline = indent > 0 ? `\n` : "";
+	return `${addnewline}${tabs}- [ ] ${task.content} -- p${priorityMap.get(task.priority)} -- [src](${task.url}) ${description}`;
 }
 
 function getTaskDescription(description: string, indent: number): string {
