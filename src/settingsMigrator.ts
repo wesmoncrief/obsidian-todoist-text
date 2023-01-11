@@ -4,11 +4,11 @@ export function migrateSettings(settings: any) : TodoistSettings {
 	let newSettings : any = settings;
 
 	if (getSettingsVersion(newSettings) == 0) {
-		newSettings = migrateToV1(settings as TodoistSettingV0)
+		newSettings = migrateToV1(newSettings as TodoistSettingV0)
 	}
 
 	if (getSettingsVersion(newSettings) == 1) {
-		newSettings = migrateToV2(settings as TodoistSettingV1)
+		newSettings = migrateToV2(newSettings)
 	}
 
 	return newSettings;
@@ -19,13 +19,13 @@ function getSettingsVersion(settings: any) : number {
 	return settings.settingsVersion ?? 0;
 }
 
-function migrateToV1(settings: TodoistSettingV0) : TodoistSettings {
+function migrateToV1(settings: TodoistSettingV0) : TodoistSettingV1 {
 	return {
 		authToken: settings.authToken,
 		enableAutomaticReplacement: settings.enableAutomaticReplacement,
+		templateString: settings.templateString,
 		excludedDirectories: settings.excludedDirectories,
 		keywordToTodoistQuery: [{keyword: settings.templateString, todoistQuery: settings.todoistQuery}],
-		showSubtasks: true,
 		settingsVersion: 1
 	};
 }
@@ -47,6 +47,7 @@ interface TodoistSettingV0 {
 	templateString: string;
 	authToken: string;
 	todoistQuery: string;
+	settingsVersion: number;
 }
 
 interface TodoistSettingV1 {
@@ -55,4 +56,5 @@ interface TodoistSettingV1 {
 	templateString: string;
 	authToken: string;
 	keywordToTodoistQuery: keywordTodoistQuery[];
+	settingsVersion: number;
 }
