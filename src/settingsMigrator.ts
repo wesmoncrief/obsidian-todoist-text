@@ -3,12 +3,12 @@ import {TodoistSettings, keywordTodoistQuery} from "./DefaultSettings";
 export function migrateSettings(settings: any) : TodoistSettings {
 	let newSettings : any = settings;
 
-	if (getSettingsVersion(newSettings) == 0) {
-		newSettings = migrateToV1(settings as TodoistSettingV0)
-	}
-
 	if (getSettingsVersion(newSettings) == 1) {
 		newSettings = migrateToV2(settings as TodoistSettingV1)
+	}
+
+	if (getSettingsVersion(newSettings) == 0) {
+		newSettings = migrateToV1(settings as TodoistSettingV0)
 	}
 
 	return newSettings;
