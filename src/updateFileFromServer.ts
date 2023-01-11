@@ -73,6 +73,7 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 	}
 }
 
+
 async function getServerData(todoistQuery: string, authToken: string): Promise<string> {
 	const api = new TodoistApi(authToken)
 
@@ -131,17 +132,8 @@ function getSubTasks(subtasks: Task[], parentId: string, indent: number): string
 function getFormattedTaskDetail(task: Task, indent: number): string {	
 	let description = getTaskDescription(task.description, indent);
 	let tabs = "\t".repeat(indent);
-
-	// used to fix the difference between the app and API (https://github.com/Doist/todoist-python/issues/18)
-	const priorityMap = new Map<number, number>([
-		[1, 4],
-		[2, 3],
-		[3, 2],
-		[4, 1]
-	])
-
 	let addnewline = indent > 0 ? `\n` : "";
-	return `${addnewline}${tabs}- [ ] ${task.content} -- p${priorityMap.get(task.priority)} -- [src](${task.url}) ${description}`;
+	return `${addnewline}${tabs}- [ ] ${task.content} -- p${task.priority} -- [src](${task.url}) ${description}`;
 }
 
 function getTaskDescription(description: string, indent: number): string {
