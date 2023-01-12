@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/wesmoncrief/obsidian-todoist-text/compare/1.3.4...1.4.0) (2023-01-12)
+
+
+### Features
+
+* support subtasks. also fix version ordering ([b652a0b](https://github.com/wesmoncrief/obsidian-todoist-text/commit/b652a0b17ddcbe0d2b4748bb49990fbd348af94e))
+
 ### [1.3.4](https://github.com/wesmoncrief/obsidian-todoist-text/compare/1.3.2...1.3.4) (2022-12-14)
 
 
