@@ -88,7 +88,6 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 
 		if (tryingToReOpen) {
 			await api.reopenTask(taskId);
-
 			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
 			
 			// check if there are any parent tasks and mark them opened
@@ -121,45 +120,47 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 	}
 	catch (e){
 		console.log("todoist text error: ", e);
-		new Notice("Todoist Text: Error trying to update task status. See console log for more details.")
+		new Notice("Todoist Text: Error trying to update task status. See console log for more details.");
 	}
 }
 
 async function getServerData(todoistQuery: string, authToken: string, showSubtasks: boolean): Promise<string> {
-	const api = new TodoistApi(authToken)
-
+	const api = new TodoistApi(authToken);
 	const tasks = await callTasksApi(api, todoistQuery);
-	
+
 	if (tasks.length === 0){
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
 	}
 	
 	let returnString = "";
 	if (showSubtasks) {
-		// work through all the parent tasks
-		let parentTasks = tasks.filter(task => task.parentId == null);
-		parentTasks.forEach(task => {
-			returnString = returnString.concat(getFormattedTaskDetail(task, 0, false));
-			returnString = returnString.concat(getSubTasks(tasks, task.id, 1));
-		})
+		const allSubtasks = await callTasksApi(api, "subtask"); //pull query of all subtasks
 
-		// determine subtasks that have a parent that wasn't returned in the query
-		let subtasks = tasks.filter(task => task.parentId != null);
-		const orphans = subtasks.filter(st => !parentTasks.contains(st));
+		// work through all the top-level parent tasks
+		const parentTasks = tasks.filter(task => task.parentId == null);
+		const subtasks = tasks.filter(task => task.parentId != null); // only pulls subtasks from the filtered list
+
+		let parentIds = "";
+		parentTasks.forEach(parentTask => {
+			parentIds = parentIds.concat(parentTask.id);
+			returnString = returnString.concat(getFormattedTaskDetail(parentTask, 0, false));
+			returnString = returnString.concat(getSubTasks(allSubtasks, parentTask.id, 1));
+		});
+
+		// determine subtasks that have a parent that wasn't returned in the query **
+		const orphans = subtasks.filter(task => !parentIds.includes(task.parentId));
 
 		// show the orphaned subtasks with a subtask indicator
-		orphans.forEach(task => {
-			returnString = returnString.concat(getFormattedTaskDetail(task, 0, true));
-			returnString = returnString.concat(getSubTasks(tasks, task.id, 1));
-		})
-
+		orphans.forEach(orphan => {
+			returnString = returnString.concat(getFormattedTaskDetail(orphan, 0, true));
+			returnString = returnString.concat(getSubTasks(allSubtasks, orphan.id, 1));
+		});
 	} else {
 		tasks.forEach(t => {
 			// show the tasks, inlcude a subtask indicator (since subtask display is disabled)
 			returnString = returnString.concat(getFormattedTaskDetail(t, 0, true));
-		})
+		});
 	}
-
 	return returnString;
 }
 
@@ -187,12 +188,12 @@ async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
 	return tasks;
 }
 
-function getSubTasks(subtasks: Task[], parentId: string, indent: number): string {
+function getSubTasks(allSubtasks: Task[], parentId: string, indent: number): string {
 	let returnString = "";
-	const filtered = subtasks.filter(sub => sub.parentId == parentId);
+	const filtered = allSubtasks.filter(sub => sub.parentId == parentId);
 	filtered.forEach(subt => {
 		returnString = returnString.concat(getFormattedTaskDetail(subt, indent, false));
-		returnString = returnString.concat(getSubTasks(subtasks, subt.id, indent + 1));
+		returnString = returnString.concat(getSubTasks(allSubtasks, subt.id, indent + 1));
 	});
 	return returnString;
 }
