@@ -6,7 +6,7 @@ import {DEFAULT_SETTINGS, TodoistSettings} from "./src/DefaultSettings";
 
 export default class TodoistPlugin extends Plugin {
 	settings: TodoistSettings;
-	hasIntervalFailure: boolean = false;
+	hasIntervalFailure = false;
 	async onload() {
 		await this.loadSettings();
 
@@ -76,7 +76,7 @@ export default class TodoistPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		let storedSettings = await this.loadData() ?? DEFAULT_SETTINGS;
+		const storedSettings = await this.loadData() ?? DEFAULT_SETTINGS;
 		this.settings = migrateSettings(storedSettings);
 		await this.saveSettings();
 	}
@@ -133,7 +133,31 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							this.plugin.settings.showSubtasks = value;
 							await this.plugin.saveSettings();
 						}
-					));
+					)); 
+	}
+
+	private addFormatSetting(containerEl: HTMLElement) {
+		containerEl.createEl('h2', {text: 'Task Formatting'});
+		new Setting(containerEl)
+			.setName('Priority')
+			.setDesc("Include Priority.")
+			.addToggle(t =>
+				t.setValue(this.plugin.settings.showPriority)
+					.onChange(async (value) => {
+							this.plugin.settings.showPriority = value;
+							await this.plugin.saveSettings();
+						}
+					)); 
+		new Setting(containerEl)
+			.setName('Link')
+			.setDesc("Include Link to task in Todoist.")
+			.addToggle(t =>
+				t.setValue(this.plugin.settings.showLink)
+					.onChange(async (value) => {
+							this.plugin.settings.showLink = value;
+							await this.plugin.saveSettings();
+						}
+					)); 
 	}
 
 	private addExcludedDirectoriesSetting(containerEl: HTMLElement) {

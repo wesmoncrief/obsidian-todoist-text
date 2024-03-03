@@ -11,6 +11,10 @@ export function migrateSettings(settings: any) : TodoistSettings {
 		newSettings = migrateToV2(newSettings)
 	}
 
+	if (getSettingsVersion(newSettings) == 2) {
+		newSettings = migrateToV3(newSettings)
+	}
+
 	return newSettings;
 }
 
@@ -30,7 +34,7 @@ function migrateToV1(settings: TodoistSettingV0) : TodoistSettingV1 {
 	};
 }
 
-function migrateToV2(settings: TodoistSettingV1) : TodoistSettings {
+function migrateToV2(settings: TodoistSettingV1) : TodoistSettingV2 {
 	return {
 		authToken: settings.authToken,
 		enableAutomaticReplacement: settings.enableAutomaticReplacement,
@@ -38,6 +42,19 @@ function migrateToV2(settings: TodoistSettingV1) : TodoistSettings {
 		keywordToTodoistQuery: settings.keywordToTodoistQuery,
 		showSubtasks: true,
 		settingsVersion: 2
+	};
+}
+
+function migrateToV3(settings: TodoistSettingV2) : TodoistSettings {
+	return {
+		authToken: settings.authToken,
+		enableAutomaticReplacement: settings.enableAutomaticReplacement,
+		excludedDirectories: settings.excludedDirectories,
+		keywordToTodoistQuery: settings.keywordToTodoistQuery,
+		showSubtasks: true,
+		showPriority: true,
+		showLink: true,
+		settingsVersion: 3
 	};
 }
 
@@ -57,4 +74,13 @@ interface TodoistSettingV1 {
 	authToken: string;
 	keywordToTodoistQuery: keywordTodoistQuery[];
 	settingsVersion: number;
+}
+
+interface TodoistSettingV2 {
+	enableAutomaticReplacement: boolean;
+	excludedDirectories: string[];
+	authToken: string;
+	keywordToTodoistQuery: keywordTodoistQuery[];
+	settingsVersion: number;
+	showSubtasks: boolean;
 }
