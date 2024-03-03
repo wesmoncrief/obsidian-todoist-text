@@ -210,7 +210,7 @@ function getFormattedTaskDetail(task: Task, indent: number, showSubtaskSymbol: b
 		[4, 1]
 	]);
 	const subtaskIndicator = (showSubtaskSymbol && task.parentId != null) ? "⮑ " : "";
-	let formatString = `${tabs}- [ ] ${subtaskIndicator}${task.content} - task ${task.id}`; 
+	let formatString = `${tabs}- [ ] ${subtaskIndicator}${task.content} `; 
 	// include priority and link here optionally
 	if (showPriority) {
 		formatString = formatString.concat(`-- p${priorityMap.get(task.priority)} `);

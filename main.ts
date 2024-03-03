@@ -104,6 +104,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		this.addApiKeySetting(containerEl);
 		this.addEnableAutomaticReplacementSetting(containerEl);
 		this.addIncludeSubttasksSetting(containerEl);
+		this.addFormatSetting(containerEl);
 		this.addKeywordTodoistQuerySetting(containerEl);
 		this.addExcludedDirectoriesSetting(containerEl);
 	}
