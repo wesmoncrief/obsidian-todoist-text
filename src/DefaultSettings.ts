@@ -7,6 +7,8 @@ export interface TodoistSettings {
 	authToken: string;
 	enableAutomaticReplacement: boolean;
 	showSubtasks: boolean;
+	noDateSubtasks: boolean;
+	todaysSubtasks: boolean;
 	showPriority: boolean;
 	showLink: boolean;
 	// never rely on adding a new default value. Any change should entail bumping the settingsVersion
@@ -25,6 +27,8 @@ export const DEFAULT_SETTINGS: TodoistSettings = {
 	authToken: "TODO - get your auth token",
 	enableAutomaticReplacement: true,
 	showSubtasks: true,
+	noDateSubtasks: true,
+	todaysSubtasks: false,
 	showPriority: true,
 	showLink: true
 }

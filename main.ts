@@ -125,6 +125,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 	}
 
 	private addIncludeSubttasksSetting(containerEl: HTMLElement) {
+		containerEl.createEl('h2', {text: 'Subtask Handling'});
 		new Setting(containerEl)
 			.setName('Enable Subtasks')
 			.setDesc("When enabled, any Subtasks associated with Todos meeting filter criteria from your keyword will be shown, indented, under the parent Todo.")
@@ -134,7 +135,27 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							this.plugin.settings.showSubtasks = value;
 							await this.plugin.saveSettings();
 						}
-					)); 
+					));
+		new Setting(containerEl)
+			.setName('Include Subtasks with no due dates')
+			.setDesc("This influences which subtasks are shown when Enable Subtasks is enabled. This includes showing subtasks with no due dates that are associated with any parent tasks included in the filter criteria. On by default.  If both Include Subtasks with no due dates and Limit Subtasks with due date of today only are on, then only subtasks with set due dates that are not today will be excluded from the query.")
+			.addToggle(t =>
+				t.setValue(this.plugin.settings.showSubtasks)
+					.onChange(async (value) => {
+							this.plugin.settings.showSubtasks = value;
+							await this.plugin.saveSettings();
+						}
+					));
+		new Setting(containerEl)
+			.setName('Limit Subtasks with due date of today only')
+			.setDesc("This influences which subtasks are shown when Enable Subtasks is enabled. This limits showing subtasks with due date of today only. Off by default. If both Include Subtasks with no due dates and Limit Subtasks with due date of today only are on, then only subtasks with set due dates that are not today will be excluded from the query.")
+			.addToggle(t =>
+				t.setValue(this.plugin.settings.showSubtasks)
+					.onChange(async (value) => {
+							this.plugin.settings.showSubtasks = value;
+							await this.plugin.saveSettings();
+						}
+					));
 	}
 
 	private addFormatSetting(containerEl: HTMLElement) {

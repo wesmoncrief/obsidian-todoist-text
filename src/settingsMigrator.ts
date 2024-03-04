@@ -52,6 +52,8 @@ function migrateToV3(settings: TodoistSettingV2) : TodoistSettings {
 		excludedDirectories: settings.excludedDirectories,
 		keywordToTodoistQuery: settings.keywordToTodoistQuery,
 		showSubtasks: true,
+		noDateSubtasks: true,
+		todaysSubtasks: false,
 		showPriority: true,
 		showLink: true,
 		settingsVersion: 3
