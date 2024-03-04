@@ -134,20 +134,20 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 	
 	let returnString = "";
 	if (showSubtasks) {
-		let subtaskQuery = "subtask";
+		let subtaskQuery = "subtask"; // default pull query of all subtasks
 		if (todaysSubtasks && noDateSubtasks) {
-			subtaskQuery = "subtask & due: today | subtask & no due date";
+			subtaskQuery = "subtask & due: today | subtask & no due date"; // excludes subtasks with due dates that are not set to today
 		} else {
 			if (noDateSubtasks) {
-				subtaskQuery = "subtask & no due date";
+				subtaskQuery = "subtask"; // default pull query of all subtasks, regardless of due date
 			} else if (todaysSubtasks && !noDateSubtasks) {
-				subtaskQuery = "subtask & due: today";
+				subtaskQuery = "subtask & due: today"; // limits to only subtasks with due date of today
 			} else {
-				subtaskQuery = "subtask & !no date";
+				subtaskQuery = "subtask & !no date"; // limits to only subtasks which have a due date
 			}
 		}
 		
-		const allSubtasks = await callTasksApi(api, subtaskQuery); //pull query of all subtasks
+		const allSubtasks = await callTasksApi(api, subtaskQuery); //pull subtasks based on query set above
 
 		// work through all the top-level parent tasks
 		const parentTasks = tasks.filter(task => task.parentId == null);
