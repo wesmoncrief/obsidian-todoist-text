@@ -1,4 +1,4 @@
-import {App, ButtonComponent, Editor, MarkdownView, Plugin, PluginSettingTab, Setting} from 'obsidian';
+import {App, ButtonComponent, Editor, MarkdownView, Plugin, PluginSettingTab, Setting, setIcon} from 'obsidian';
 import {toggleServerTaskStatus, updateFileFromServer} from "./src/updateFileFromServer";
 import {FolderSuggest} from "./src/suggest/folderSuggester";
 import {migrateSettings} from "./src/settingsMigrator";
@@ -99,8 +99,19 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 		containerEl.createEl('h1', {text: 'Todoist Text'});
-		containerEl.createEl('a', {text: 'Important - see usage instructions', href: 'https://github.com/wesmoncrief/obsidian-todoist-text/tree/master#readme'});
-
+		const warning = containerEl.createEl("div");
+		warning.addClasses(["todoist-setting-warning", "callout"]);
+		const warningInner = warning.createEl("div");
+		const icon = warningInner.createEl("span");
+		setIcon(icon,"lucide-alert-triangle");
+		icon.addClass("callout-icon");
+		const warnLink = warningInner.createEl("a", null, (link) => {
+				link.href = "https://github.com/wesmoncrief/obsidian-todoist-text/tree/master#usage";
+				link.innerHTML = ("Important: See usage instructions");
+			});
+		warnLink.addClasses(["callout-title-inner", "callout-title-color", "warningLink"])
+		warningInner.addClasses(["callout-title","callout-title-padding", "callout-title-color"]);
+		
 		this.addApiKeySetting(containerEl);
 		this.addEnableAutomaticReplacementSetting(containerEl);
 		this.addIncludeSubttasksSetting(containerEl);
@@ -122,47 +133,59 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 						}
 					));
+		containerEl.createEl('hr').addClass("dashed");
 	}
 
 	private addIncludeSubttasksSetting(containerEl: HTMLElement) {
-		containerEl.createEl('h2', {text: 'Subtask Handling'});
+		containerEl.createEl('h2', {text: 'Subtask Handling'}).addClass("heading");
 		new Setting(containerEl)
 			.setName('Enable Subtasks')
-			.setDesc("When enabled, any Subtasks associated with Todos meeting filter criteria from your keyword will be shown, indented, under the parent Todo.")
+			.setDesc("When enabled, any Subtasks associated with Tasks meeting filter criteria from your keyword will be shown, indented, under the parent Task.")
 			.addToggle(t =>
 				t.setValue(this.plugin.settings.showSubtasks)
 					.onChange(async (value) => {
 							this.plugin.settings.showSubtasks = value;
+							if (this.plugin.settings.showSubtasks == false) {
+								subtaskDiv.toggleClass('hide',true);
+							} else {
+								subtaskDiv.toggleClass('hide',false);
+							}
 							await this.plugin.saveSettings();
 						}
 					));
-		new Setting(containerEl)
+		const subtaskDiv = containerEl.createEl("div");
+		subtaskDiv.addClass("todoist-setting-div");
+		new Setting(subtaskDiv)
 			.setName('Include Subtasks with no due dates')
-			.setDesc("This influences which subtasks are shown when Enable Subtasks is enabled. This includes showing subtasks with no due dates that are associated with any parent tasks included in the filter criteria. On by default.  If both Include Subtasks with no due dates and Limit Subtasks with due date of today only are on, then only subtasks with set due dates that are not today will be excluded from the query.")
+			.setDesc("This includes showing subtasks with no due dates that are associated with any parent tasks included in the filter criteria. On by default.")
+			.setClass("todoist-setting-item")
 			.addToggle(t =>
-				t.setValue(this.plugin.settings.showSubtasks)
+				t.setValue(this.plugin.settings.noDateSubtasks)
 					.onChange(async (value) => {
-							this.plugin.settings.showSubtasks = value;
+							this.plugin.settings.noDateSubtasks = value;
 							await this.plugin.saveSettings();
 						}
 					));
-		new Setting(containerEl)
-			.setName('Limit Subtasks with due date of today only')
-			.setDesc("This influences which subtasks are shown when Enable Subtasks is enabled. This limits showing subtasks with due date of today only. Off by default. If both Include Subtasks with no due dates and Limit Subtasks with due date of today only are on, then only subtasks with set due dates that are not today will be excluded from the query.")
+		new Setting(subtaskDiv)
+			.setName('Limit Subtasks by due date assigned')
+			.setDesc("When this and Enable Subtasks is on, this filters out subtasks with due date assigned that are not today. Off by default.")
+			.setClass("todoist-setting-item")
 			.addToggle(t =>
-				t.setValue(this.plugin.settings.showSubtasks)
+				t.setValue(this.plugin.settings.todaysSubtasks)
 					.onChange(async (value) => {
-							this.plugin.settings.showSubtasks = value;
+							this.plugin.settings.todaysSubtasks = value;
 							await this.plugin.saveSettings();
 						}
 					));
+		//containerEl.createEl('hr').addClass("dashed");
 	}
-
 	private addFormatSetting(containerEl: HTMLElement) {
-		containerEl.createEl('h2', {text: 'Task Formatting'});
-		new Setting(containerEl)
+		this.containerEl.addClass("todoist-setting-section");
+		containerEl.createEl('h2', {text: 'Task Formatting'}).addClass("heading");
+		new Setting(this.containerEl)
 			.setName('Priority')
 			.setDesc("Include Priority.")
+			.setClass("todoist-setting-item")
 			.addToggle(t =>
 				t.setValue(this.plugin.settings.showPriority)
 					.onChange(async (value) => {
@@ -170,9 +193,10 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 						}
 					)); 
-		new Setting(containerEl)
+		new Setting(this.containerEl)
 			.setName('Link')
 			.setDesc("Include Link to task in Todoist.")
+			.setClass("todoist-setting-item")
 			.addToggle(t =>
 				t.setValue(this.plugin.settings.showLink)
 					.onChange(async (value) => {
@@ -180,10 +204,12 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 						}
 					)); 
+		//containerEl.createEl('hr').addClass("dashed");
 	}
 
 	private addExcludedDirectoriesSetting(containerEl: HTMLElement) {
-		containerEl.createEl('h2', {text: 'Excluded folder'});
+		this.containerEl.addClass("todoist-setting-section");
+		containerEl.createEl('h2', {text: 'Excluded folder'}).addClass("heading");
 		const excludedFolderDescription = document.createDocumentFragment();
 		excludedFolderDescription.append(
 			"If you use template files (e.g. for daily notes) and you want to use a keyword in that template file, this plugin would replace the keyword in your template file with Todos immediately, rendering the template useless.",
@@ -195,6 +221,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		this.plugin.settings.excludedDirectories.forEach(
 			(dir, index) => {
 				new Setting(this.containerEl)
+					.setClass("todoist-setting-item")
 					.setName("Excluded folder")
 					.addSearch((cb) => {
 						new FolderSuggest(this.app, cb.inputEl);
@@ -222,6 +249,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName("Add another excluded folder")
+			.setClass("todoist-setting-last-item")
 			.addButton((button: ButtonComponent) => {
 				button
 					.setButtonText("+")
@@ -236,7 +264,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 	private addKeywordTodoistQuerySetting(containerEl: HTMLElement) {
 		// todo add warning/stop if multiple same keywords
-		containerEl.createEl('h2', {text: 'Keywords and Filter Definitions'});
+		containerEl.createEl('h2', {text: 'Keywords and Filter Definitions'}).addClass("heading");
 		const filterDescription = document.createDocumentFragment();
 		filterDescription.append('This plugin will find the specified keyword in a currently open file and replace ' +
 			'the keyword with your Todos. Your Todos will be pulled from Todoist based on the specified ',
@@ -294,6 +322,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName("Add another keyword and Todoist query")
+			.setClass("todoist-setting-last-item")
 			.addButton((button: ButtonComponent) => {
 				button
 					.setButtonText("+")
@@ -334,5 +363,6 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 					// give another chance for auto-updates to happen
 					this.plugin.hasIntervalFailure = false;
 				}));
+		containerEl.createEl('hr').addClass("dashed");
 	}
 }
