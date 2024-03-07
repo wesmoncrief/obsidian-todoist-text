@@ -56,6 +56,7 @@ function migrateToV3(settings: TodoistSettingV2) : TodoistSettings {
 		todaysSubtasks: false,
 		showPriority: true,
 		showLink: true,
+		showDescription: true,
 		settingsVersion: 3
 	};
 }

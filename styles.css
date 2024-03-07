@@ -9,16 +9,12 @@
 	border-top: none;
 }
 
-.todoist-setting-last-item {
-	padding-top: 8px;
-}
-
 .heading {
 	text-decoration-thickness: .3em;
 	text-underline-offset: 2px;
 	text-decoration: underline;
 	text-decoration-color: var(--color-accent-dark);
-	padding: 8px;
+	padding: 8px 4px 4px;
 	width: 100%;
 	background-color: var(--background-primary-alt);
 	margin: 16px 0px 8px;
@@ -39,7 +35,7 @@
 	justify-content: center;
 }
 
-.todoist-setting-item {
+.todoist-setting-item, .todoist-setting-top, .todoist-setting-bottom {
 	align-items: center;
 	padding: 8px 32px 16px 32px;
 	border-left: 2px double var(--divider-color);
@@ -48,12 +44,16 @@
 	border-bottom: 1px solid var(--divider-color);
 }
 
-.todoist-setting-item:first-child {
-	border-top: 4px solid var(--divider-color);
+.todoist-setting-top {
+	border-top: 4px solid var(--divider-color) !important;
 }
 
-.todoist-setting-item:last-child {
+.todoist-setting-bottom {
 	padding-bottom: 16px;
+}
+
+.todoist-setting-last-item {
+	padding-top: 8px;
 }
 
 .todoist-setting-warning {
@@ -85,4 +85,9 @@
 hr.dashed {
 	border-top: 1px dashed var(--divider-color);
 	margin: 16px 0;
+}
+
+.code{
+	background-color: var(--text-highlight-bg);
+	text: var(--code-normal);
 }

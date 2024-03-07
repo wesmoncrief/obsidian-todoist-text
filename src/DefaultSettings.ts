@@ -11,6 +11,7 @@ export interface TodoistSettings {
 	todaysSubtasks: boolean;
 	showPriority: boolean;
 	showLink: boolean;
+	showDescription: boolean;
 	// never rely on adding a new default value. Any change should entail bumping the settingsVersion
 	// and adding a settings migration
 }
@@ -30,5 +31,6 @@ export const DEFAULT_SETTINGS: TodoistSettings = {
 	noDateSubtasks: true,
 	todaysSubtasks: false,
 	showPriority: true,
-	showLink: true
+	showLink: true,
+	showDescription: true
 }

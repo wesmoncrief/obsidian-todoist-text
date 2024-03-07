@@ -28,7 +28,6 @@ export default class TodoistPlugin extends Plugin {
 			}
 		});
 
-
 		if (this.settings.enableAutomaticReplacement) {
 			this.registerEvent(this.app.workspace.on('file-open', async () => {
 				if (this.hasIntervalFailure) {
@@ -43,21 +42,19 @@ export default class TodoistPlugin extends Plugin {
 				}
 			}));
 		}
-
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new TodoistPluginSettingTab(this.app, this));
 
 		/* This is in addition to the on file-open callback. This helps with
-				 1. manually adding the keyword to a new spot in a file
-				 2. when you make a setting change, such as changing your keyword
+				1. manually adding the keyword to a new spot in a file
+				2. when you make a setting change, such as changing your keyword
 			If this notices a keyword, it should wait at least 2 seconds before updating the text - this avoids a shocking
 			user experience.
 		 */
 		// 5 sec sleep because we want to ensure the file-open event finishes before this loop starts
 		await new Promise(r => setTimeout(r, 3000));
-		this.registerInterval(window.setInterval(() => this.updateFileFromServerIfEnabled(), 4 * 1000))
+		this.registerInterval(window.setInterval(() => this.updateFileFromServerIfEnabled(), 4 * 1000));
 	}
-
 
 	async updateFileFromServerIfEnabled() {
 		if (this.settings.enableAutomaticReplacement && !this.hasIntervalFailure) {
@@ -109,7 +106,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 				link.href = "https://github.com/wesmoncrief/obsidian-todoist-text/tree/master#usage";
 				link.innerHTML = ("Important: See usage instructions");
 			});
-		warnLink.addClasses(["callout-title-inner", "callout-title-color", "warningLink"])
+		warnLink.addClasses(["callout-title-inner", "callout-title-color", "warningLink"]);
 		warningInner.addClasses(["callout-title","callout-title-padding", "callout-title-color"]);
 		
 		this.addApiKeySetting(containerEl);
@@ -137,6 +134,9 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 	}
 
 	private addIncludeSubttasksSetting(containerEl: HTMLElement) {
+		/* 
+			Subtask Handling
+		*/
 		containerEl.createEl('h2', {text: 'Subtask Handling'}).addClass("heading");
 		new Setting(containerEl)
 			.setName('Enable Subtasks')
@@ -158,7 +158,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		new Setting(subtaskDiv)
 			.setName('Include Subtasks with no due dates')
 			.setDesc("This includes showing subtasks with no due dates that are associated with any parent tasks included in the filter criteria. On by default.")
-			.setClass("todoist-setting-item")
+			.setClass("todoist-setting-top")
 			.addToggle(t =>
 				t.setValue(this.plugin.settings.noDateSubtasks)
 					.onChange(async (value) => {
@@ -169,7 +169,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		new Setting(subtaskDiv)
 			.setName('Limit Subtasks by due date assigned')
 			.setDesc("When this and Enable Subtasks is on, this filters out subtasks with due date assigned that are not today. Off by default.")
-			.setClass("todoist-setting-item")
+			.setClass("todoist-setting-bottom")
 			.addToggle(t =>
 				t.setValue(this.plugin.settings.todaysSubtasks)
 					.onChange(async (value) => {
@@ -177,15 +177,27 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 						}
 					));
-		//containerEl.createEl('hr').addClass("dashed");
 	}
+
 	private addFormatSetting(containerEl: HTMLElement) {
+		/* 
+			Task Formatting
+		*/
 		this.containerEl.addClass("todoist-setting-section");
 		containerEl.createEl('h2', {text: 'Task Formatting'}).addClass("heading");
+		const formatDescription = document.createDocumentFragment();
+		formatDescription.createEl("span", null, (span) => {
+			span.innerText = 'These settings impact how each task is formatted. Example: ';
+			span.createEl("span", null, (span) => {
+				span.innerText = "`${task.content} -- $taskPriority -- [src](${task.url}) ${description}`";
+				span.addClasses(["code"]);
+			});
+		});
+		new Setting(containerEl).setDesc(formatDescription);
 		new Setting(this.containerEl)
 			.setName('Priority')
 			.setDesc("Include Priority.")
-			.setClass("todoist-setting-item")
+			.setClass("todoist-setting-top")
 			.addToggle(t =>
 				t.setValue(this.plugin.settings.showPriority)
 					.onChange(async (value) => {
@@ -203,8 +215,18 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							this.plugin.settings.showLink = value;
 							await this.plugin.saveSettings();
 						}
-					)); 
-		//containerEl.createEl('hr').addClass("dashed");
+					));
+		new Setting(this.containerEl)
+			.setName('Description')
+			.setDesc("Include Description for task.")
+			.setClass("todoist-setting-bottom")
+			.addToggle(t =>
+				t.setValue(this.plugin.settings.showDescription)
+					.onChange(async (value) => {
+							this.plugin.settings.showDescription = value;
+							await this.plugin.saveSettings();
+						}
+					));
 	}
 
 	private addExcludedDirectoriesSetting(containerEl: HTMLElement) {
@@ -214,9 +236,9 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		excludedFolderDescription.append(
 			"If you use template files (e.g. for daily notes) and you want to use a keyword in that template file, this plugin would replace the keyword in your template file with Todos immediately, rendering the template useless.",
 			excludedFolderDescription.createEl("br"),
-			"To prevent this, exclude the folder containing your template file.",
+			"To prevent this, exclude the folder containing your template file."
 		);
-		new Setting(this.containerEl).setDesc(excludedFolderDescription)
+		new Setting(this.containerEl).setDesc(excludedFolderDescription);
 
 		this.plugin.settings.excludedDirectories.forEach(
 			(dir, index) => {
@@ -241,12 +263,11 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 									1
 								);
 								await this.plugin.saveSettings();
-								await this.display()
-							})
+								await this.display();
+							});
 					});
 			}
 		)
-
 		new Setting(this.containerEl)
 			.setName("Add another excluded folder")
 			.setClass("todoist-setting-last-item")
@@ -274,7 +295,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 			}),
 			containerEl.createEl("br"),
 			"Each keyword you use should be unique."
-		)
+		);
 		new Setting(containerEl).setDesc(filterDescription);
 
 		this.plugin.settings.keywordToTodoistQuery.forEach(
@@ -313,13 +334,11 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 									1
 								);
 								await this.plugin.saveSettings();
-								await this.display()
+								await this.display();
 							})
 					})
 				div.appendChild(this.containerEl.lastChild);
 			});
-
-
 		new Setting(this.containerEl)
 			.setName("Add another keyword and Todoist query")
 			.setClass("todoist-setting-last-item")
@@ -336,7 +355,6 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 						this.display();
 					});
 			});
-
 	}
 
 	private addApiKeySetting(containerEl: HTMLElement) {
@@ -346,7 +364,6 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 				'could access all of your Todoist data. This is stored in plain text in your .obsidian/plugins folder.' +
 				' Ensure that you are comfortable with the security implications before proceeding. ' +
 				'You can get your token from the "API token" section ';
-
 			span.createEl("a", null, (link) => {
 				link.href = "https://todoist.com/prefs/integrations";
 				link.innerText = "here.";
