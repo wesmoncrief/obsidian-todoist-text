@@ -16,7 +16,7 @@ export default class TodoistPlugin extends Plugin {
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				toggleServerTaskStatus(editor, this.settings);
 				// @ts-ignore undocumented but was recommended to use here - https://github.com/obsidianmd/obsidian-releases/pull/768#issuecomment-1038441881
-				view.app.commands.executeCommandById("editor:toggle-checklist-status")
+				view.app.commands.executeCommandById("editor:toggle-checklist-status");
 			}
 		});
 
@@ -24,7 +24,7 @@ export default class TodoistPlugin extends Plugin {
 			id: 'todoist-task-pull',
 			name: 'Replace keyword with todos',
 			editorCallback: () => {
-				updateFileFromServer(this.settings, this.app)
+				updateFileFromServer(this.settings, this.app);
 			}
 		});
 
@@ -32,11 +32,11 @@ export default class TodoistPlugin extends Plugin {
 			this.registerEvent(this.app.workspace.on('file-open', async () => {
 				if (this.hasIntervalFailure) {
 					console.log("Todoist text: not checking for replacement keyword because of previous server " +
-						"failure. Either use the manual keyword, or restart the app.")
+						"failure. Either use the manual keyword, or restart the app.");
 					return;
 				}
 				try {
-					await updateFileFromServer(this.settings, this.app)
+					await updateFileFromServer(this.settings, this.app);
 				} catch {
 					this.hasIntervalFailure = true;
 				}
@@ -60,7 +60,7 @@ export default class TodoistPlugin extends Plugin {
 		if (this.settings.enableAutomaticReplacement && !this.hasIntervalFailure) {
 			await new Promise(r => setTimeout(r, 2000));
 			try {
-				await updateFileFromServer(this.settings, this.app)
+				await updateFileFromServer(this.settings, this.app);
 			}
 			catch {
 				this.hasIntervalFailure = true;
@@ -267,7 +267,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 							});
 					});
 			}
-		)
+		);
 		new Setting(this.containerEl)
 			.setName("Add another excluded folder")
 			.setClass("todoist-setting-last-item")
@@ -335,8 +335,8 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 								);
 								await this.plugin.saveSettings();
 								await this.display();
-							})
-					})
+							});
+					});
 				div.appendChild(this.containerEl.lastChild);
 			});
 		new Setting(this.containerEl)

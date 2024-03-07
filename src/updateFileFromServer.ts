@@ -196,7 +196,7 @@ async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
 		}
 		console.log(errorMsg, e);
 		new Notice(errorMsg);
-		throw(e)
+		throw(e);
 	}
 	return tasks;
 }
