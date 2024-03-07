@@ -1,11 +1,93 @@
 /* file needs to exist for github release action to work */
 
 .todoist-setting-div > .setting-item > .setting-item-control {
-	justify-content: space-around;
 	padding: 0;
 	width: 100%;
+}
+.setting-item {
+	padding: 4px 8px;
+	border-top: none;
+}
+
+.heading {
+	text-decoration-thickness: .3em;
+	text-underline-offset: 2px;
+	text-decoration: underline;
+	text-decoration-color: var(--color-accent-dark);
+	padding: 8px 4px 4px;
+	width: 100%;
+	background-color: var(--background-primary-alt);
+	margin: 16px 0px 8px;
+	border-radius: 4px;
 }
 
 .todoist-query-setting {
 	width: 45%;
+}
+
+.todoist-setting-section {
+	justify-content: center;
+	align-items: center;
+}
+
+.todoist-setting-div {
+	align-items: center;
+	justify-content: center;
+}
+
+.todoist-setting-item, .todoist-setting-top, .todoist-setting-bottom {
+	align-items: center;
+	padding: 8px 32px 16px 32px;
+	border-left: 2px double var(--divider-color);
+	margin-left: 8px;
+	border-right: 1px solid var(--divider-color);
+	border-bottom: 1px solid var(--divider-color);
+}
+
+.todoist-setting-top {
+	border-top: 4px solid var(--divider-color) !important;
+}
+
+.todoist-setting-bottom {
+	padding-bottom: 16px;
+}
+
+.todoist-setting-last-item {
+	padding-top: 8px;
+}
+
+.todoist-setting-warning {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 4px 8px;
+	--callout-color: var(--callout-warning);
+}
+.warningInner {
+	--callout-color: var(--callout-warning);
+}
+.warningLink {
+	text-decoration-thickness: .125em;
+	text-underline-offset: 1px;
+	padding-bottom: .3em;
+}
+
+.warningLink:hover {
+	--link-color-hover: var(--color-orange-rgb);
+	filter: brightness(75%) saturate(150%) contrast(175%);
+	transition: background-color var(--anim-duration-superfast) var(--anim-motion-smooth);
+}
+
+.hide{
+	display: none;
+}
+
+hr.dashed {
+	border-top: 1px dashed var(--divider-color);
+	margin: 16px 0;
+}
+
+.code{
+	background-color: var(--text-highlight-bg);
+	text: var(--code-normal);
 }

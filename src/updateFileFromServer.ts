@@ -1,5 +1,5 @@
-import {Task, TodoistApi} from '@doist/todoist-api-typescript'
-import {App, Editor, Notice, } from 'obsidian'
+import {Task, TodoistApi} from '@doist/todoist-api-typescript';
+import {App, Editor, Notice, } from 'obsidian';
 import {TodoistSettings} from "./DefaultSettings";
 
 
@@ -10,25 +10,24 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 		console.log("todoist text: not looking at file bc of excluded directories");
 		return;
 	}
-
-	let fileContents = await app.vault.read(file)
+	let fileContents = await app.vault.read(file);
 	for (const keywordToQuery of settings.keywordToTodoistQuery) {
 		// if length too short, probably didn't set the settings and just left the placeholder empty string
 		// If you wanted to pull all tasks, you can always use `view all` filter definition.
 		if (keywordToQuery.keyword.length > 1 && keywordToQuery.todoistQuery.length > 1 && fileContents.contains(keywordToQuery.keyword)) {
 			if (settings.authToken.contains("TODO - ")) {
 				new Notice("Todoist Text: You need to configure your Todoist API token in the Todoist Text plugin settings");
-				throw("Todoist text: missing auth token.")
+				throw ("Todoist text: missing auth token.");
 			}
 			console.log("Todoist Text: Updating keyword with todos. If this happened automatically and you did not intend for this " +
 				"to happen, you should either disable automatic replacement of your keyword with todos (via the settings), or" +
-				" exclude this file from auto replace (via the settings).")
-			const formattedTodos = await getServerData(keywordToQuery.todoistQuery, settings.authToken, settings.showSubtasks);
+				" exclude this file from auto replace (via the settings).");
+			const formattedTodos = await getServerData(keywordToQuery.todoistQuery, settings.authToken, settings.showSubtasks, settings.showPriority, settings.showLink, settings.showDescription, settings.noDateSubtasks, settings.todaysSubtasks);
 
 			// re-read file contents to reduce race condition after slow server call
-			fileContents = await app.vault.read(file)
+			fileContents = await app.vault.read(file);
 			const newData = fileContents.replace(keywordToQuery.keyword, formattedTodos);
-			await app.vault.modify(file, newData)
+			await app.vault.modify(file, newData);
 		}
 	}
 }
@@ -41,8 +40,8 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		// editor:toggle-checklist-status command.
 		const tryingToCloseRegex = /^\s*- \[\s]/;
 		const tryingToReOpenRegex = /^\s*- \[\S]/;
-		const tryingToClose = tryingToCloseRegex.test(lineText)
-		const tryingToReOpen = tryingToReOpenRegex.test(lineText)
+		const tryingToClose = tryingToCloseRegex.test(lineText);
+		const tryingToReOpen = tryingToReOpenRegex.test(lineText);
 
 		if (!(lineText.contains("[src](https://todoist.com/showTask?id=")) && (tryingToClose || tryingToReOpen)) {
 			return;
@@ -52,15 +51,14 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		try {
 			taskId = lineText.split("https://todoist.com/showTask?id=")[1].split(")")[0];
 		} catch (e) {
-			console.log(e)
+			console.log(e);
 			return;
 		}
 
-		const api = new TodoistApi(settings.authToken)
+		const api = new TodoistApi(settings.authToken);
 		const serverTaskName = (await api.getTask(taskId)).content;
 		if (tryingToClose) {
 			await api.closeTask(taskId);
-			
 			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
 
 			// check if there are any subtasks and mark them closed
@@ -68,11 +66,13 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 			for (let line = e.getCursor().line + 1; line < e.lineCount(); line++) {
 				const lineText = e.getLine(line);
 				const tabCount = lineText.split(/[^\t]/)[0].length;
-				if (tabCount==0) break;
-
+				if (tabCount==0)
+					break;
 				if (tabCount > actionedTaskTabCount) {
 					const replacedText = lineText.replace("- [ ]", "- [x]");
-					if (replacedText != lineText) { subtasksClosed++};
+					if (replacedText != lineText) { 
+						subtasksClosed++;
+					}
 					e.setLine(line, replacedText);
 				}
 			}
@@ -88,7 +88,6 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 
 		if (tryingToReOpen) {
 			await api.reopenTask(taskId);
-
 			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
 			
 			// check if there are any parent tasks and mark them opened
@@ -99,11 +98,14 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 
 				if (tabCount < actionedTaskTabCount) {
 					const replacedText = lineText.replace("- [X]", "- [ ]").replace("- [x]", "- [ ]");
-					if (replacedText != lineText) { parentTasksOpened++};
+					if (replacedText != lineText) { 
+						parentTasksOpened++;
+					}
 					e.setLine(line, replacedText);
 				}
 
-				if (tabCount==0 && parentTasksOpened > 0) break; // found the topmost task
+				if (tabCount==0 && parentTasksOpened > 0) 
+				break; // found the topmost task
 			}
 
 			// advise user task is open, along with any parent tasks if they were found
@@ -118,45 +120,60 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 	}
 	catch (e){
 		console.log("todoist text error: ", e);
-		new Notice("Todoist Text: Error trying to update task status. See console log for more details.")
+		new Notice("Todoist Text: Error trying to update task status. See console log for more details.");
 	}
 }
 
-async function getServerData(todoistQuery: string, authToken: string, showSubtasks: boolean): Promise<string> {
-	const api = new TodoistApi(authToken)
-
+async function getServerData(todoistQuery: string, authToken: string, showSubtasks: boolean, showPriority: boolean, showLink: boolean, showDescription: boolean, noDateSubtasks: boolean, todaysSubtasks: boolean): Promise<string> {
+	const api = new TodoistApi(authToken);
 	const tasks = await callTasksApi(api, todoistQuery);
-	
+
 	if (tasks.length === 0){
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
 	}
 	
 	let returnString = "";
 	if (showSubtasks) {
-		// work through all the parent tasks
-		let parentTasks = tasks.filter(task => task.parentId == null);
-		parentTasks.forEach(task => {
-			returnString = returnString.concat(getFormattedTaskDetail(task, 0, false));
-			returnString = returnString.concat(getSubTasks(tasks, task.id, 1));
-		})
+		let subtaskQuery = "subtask"; // default pull query of all subtasks
+		if (todaysSubtasks && noDateSubtasks) {
+			subtaskQuery = "subtask & due: today | subtask & no due date"; // excludes subtasks with due dates that are not set to today
+		} else {
+			if (noDateSubtasks) {
+				subtaskQuery = "subtask"; // default pull query of all subtasks, regardless of due date
+			} else if (todaysSubtasks && !noDateSubtasks) {
+				subtaskQuery = "subtask & due: today"; // limits to only subtasks with due date of today
+			} else {
+				subtaskQuery = "subtask & !no date"; // limits to only subtasks which have a due date
+			}
+		}
+		
+		const allSubtasks = await callTasksApi(api, subtaskQuery); //pull subtasks based on query set above
 
-		// determine subtasks that have a parent that wasn't returned in the query
-		let subtasks = tasks.filter(task => task.parentId != null);
-		const orphans = subtasks.filter(st => !parentTasks.contains(st));
+		// work through all the top-level parent tasks
+		const parentTasks = tasks.filter(task => task.parentId == null);
+		const subtasks = tasks.filter(task => task.parentId != null); // only pulls subtasks from the filtered list
+
+		let parentIds = "";
+		parentTasks.forEach(parentTask => {
+			parentIds = parentIds.concat(parentTask.id);
+			returnString = returnString.concat(getFormattedTaskDetail(parentTask, 0, false, showPriority, showLink, showDescription));
+			returnString = returnString.concat(getSubTasks(allSubtasks, parentTask.id, 1, showPriority, showLink, showDescription));
+		});
+
+		// determine subtasks that have a parent that wasn't returned in the query **
+		const orphans = subtasks.filter(task => !parentIds.includes(task.parentId));
 
 		// show the orphaned subtasks with a subtask indicator
-		orphans.forEach(task => {
-			returnString = returnString.concat(getFormattedTaskDetail(task, 0, true));
-			returnString = returnString.concat(getSubTasks(tasks, task.id, 1));
-		})
-
+		orphans.forEach(orphan => {
+			returnString = returnString.concat(getFormattedTaskDetail(orphan, 0, true, showPriority, showLink, showDescription));
+			returnString = returnString.concat(getSubTasks(allSubtasks, orphan.id, 1, showPriority, showLink, showDescription));
+		});
 	} else {
 		tasks.forEach(t => {
 			// show the tasks, inlcude a subtask indicator (since subtask display is disabled)
-			returnString = returnString.concat(getFormattedTaskDetail(t, 0, true));
-		})
+			returnString = returnString.concat(getFormattedTaskDetail(t, 0, true, showPriority, showLink, showDescription));
+		});
 	}
-
 	return returnString;
 }
 
@@ -168,7 +185,7 @@ async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
 		let errorMsg : string;
 		switch (e.httpStatusCode) {
 			case undefined:
-				errorMsg = `Todoist text: There was a problem pulling data from Todoist. Is your internet connection working?`
+				errorMsg = `Todoist text: There was a problem pulling data from Todoist. Is your internet connection working?`;
 				break;
 			case 403:
 				errorMsg ="Todoist text: Authentication with todoist server failed. Check that" +
@@ -179,24 +196,24 @@ async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
 		}
 		console.log(errorMsg, e);
 		new Notice(errorMsg);
-		throw(e)
+		throw(e);
 	}
 	return tasks;
 }
 
-function getSubTasks(subtasks: Task[], parentId: string, indent: number): string {
+function getSubTasks(allSubtasks: Task[], parentId: string, indent: number, showPriority: boolean, showLink: boolean, showDescription: boolean): string {
 	let returnString = "";
-	let filtered = subtasks.filter(sub => sub.parentId == parentId);
-	filtered.forEach(st => {
-		returnString = returnString.concat(getFormattedTaskDetail(st, indent, false));
-		returnString = returnString.concat(getSubTasks(subtasks, st.id ,indent+1))
-	})
+	const filtered = allSubtasks.filter(sub => sub.parentId == parentId);
+	filtered.forEach(subt => {
+		returnString = returnString.concat(getFormattedTaskDetail(subt, indent, false, showPriority, showLink, showDescription));
+		returnString = returnString.concat(getSubTasks(allSubtasks, subt.id, indent + 1, showPriority, showLink, showDescription));
+	});
 	return returnString;
 }
 
-function getFormattedTaskDetail(task: Task, indent: number, showSubtaskSymbol: boolean): string {	
-	let description = getTaskDescription(task.description, indent);
-	let tabs = "\t".repeat(indent);
+function getFormattedTaskDetail(task: Task, indent: number, showSubtaskSymbol: boolean, showPriority: boolean, showLink: boolean, showDescription: boolean): string {	
+	const description = getTaskDescription(task.description, indent);
+	const tabs = "\t".repeat(indent);
 
 	// used to fix the difference between the app and API (https://github.com/Doist/todoist-python/issues/18)
 	const priorityMap = new Map<number, number>([
@@ -204,14 +221,24 @@ function getFormattedTaskDetail(task: Task, indent: number, showSubtaskSymbol: b
 		[2, 3],
 		[3, 2],
 		[4, 1]
-	])
-
+	]);
 	const subtaskIndicator = (showSubtaskSymbol && task.parentId != null) ? "⮑ " : "";
-
-	return `${tabs}- [ ] ${subtaskIndicator}${task.content} -- p${priorityMap.get(task.priority)} -- [src](${task.url}) ${description}\n`;
-}
+	let formatString = `${tabs}- [ ] ${subtaskIndicator}${task.content}`;
+	// include priority and link here optionally
+	if (showPriority) {
+		formatString = formatString.concat(` -- p${priorityMap.get(task.priority)}`);
+	}
+	if (showLink) {
+		formatString = formatString.concat(` -- [src](${task.url})`);
+	}
+	if (showDescription) {
+		formatString = formatString.concat(` ${description}`);
+	}
+	formatString = formatString.concat(`\n`);
+	return formatString;	
+} 
 
 function getTaskDescription(description: string, indent: number): string {
-	let tabs = "\t".repeat(indent);
+	const tabs = "\t".repeat(indent);
 	return description.length === 0 ? "" : `\n${tabs}\t- ${description.trim().replace(/(?:\r\n|\r|\n)+/g, '\n\t- ')}`;
 }
