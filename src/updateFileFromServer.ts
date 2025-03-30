@@ -33,6 +33,13 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 	}
 }
 
+function extractTaskIdFromLine(lineText: string): string | null {
+	const match = lineText.match(
+		/todoist\.com\/(?:showTask\?id=|app\/task\/)(\d+)/
+	);
+	return match ? match[1] : null;
+}
+
 export async function toggleServerTaskStatus(e: Editor, settings: TodoistSettings) {
 	try {
 		const lineText = e.getLine(e.getCursor().line);
@@ -44,16 +51,20 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		const tryingToClose = tryingToCloseRegex.test(lineText)
 		const tryingToReOpen = tryingToReOpenRegex.test(lineText)
 
-		if (!(lineText.contains("[src](https://todoist.com/showTask?id=")) && (tryingToClose || tryingToReOpen)) {
+		if (
+			!(
+				lineText.contains("[src](https://todoist.com/showTask?id=") &&
+				lineText.contains("[src](https://app.todoist.com/app/task/")
+			) &&
+			(tryingToClose || tryingToReOpen)
+		) {
 			return;
 		}
 
-		let taskId: string;
-		try {
-			taskId = lineText.split("https://todoist.com/showTask?id=")[1].split(")")[0];
-		} catch (e) {
-			console.log(e)
-			return;
+		const taskId = extractTaskIdFromLine(lineText);
+		if(!taskId) {
+		  console.warn("cannot find task ID in ", lineText);
+		  return;
 		}
 
 		const api = new TodoistApi(settings.authToken)
