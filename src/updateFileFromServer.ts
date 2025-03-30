@@ -53,7 +53,7 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 
 		if (
 			!(
-				lineText.contains("[src](https://todoist.com/showTask?id=") &&
+				lineText.contains("[src](https://todoist.com/showTask?id=") ||
 				lineText.contains("[src](https://app.todoist.com/app/task/")
 			) &&
 			(tryingToClose || tryingToReOpen)
