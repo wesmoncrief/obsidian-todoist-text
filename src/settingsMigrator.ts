@@ -11,6 +11,14 @@ export function migrateSettings(settings: any) : TodoistSettings {
 		newSettings = migrateToV2(newSettings)
 	}
 
+	if (getSettingsVersion(newSettings) == 2) {
+		newSettings = migrateToV3(newSettings);
+	}
+
+	if (getSettingsVersion(newSettings) == 3) {
+		newSettings = migrateToV4(newSettings);
+	}
+
 	return newSettings;
 }
 
@@ -37,6 +45,42 @@ function migrateToV2(settings: TodoistSettingV1) : TodoistSettings {
 		excludedDirectories: settings.excludedDirectories,
 		keywordToTodoistQuery: settings.keywordToTodoistQuery,
 		showSubtasks: true,
+		projectEnabled: true,
+		projectPrefix: '[',
+		projectSuffix: ']',
+		sectionEnabled: false,
+		sectionPrefix: '',
+		sectionSuffix: '',
+		labelsEnabled: false,
+		labelsPrefix: '',
+		labelsSuffix: '',
+		dueEnabled: false,
+		duePrefix: '',
+		dueSuffix: '',
+		assigneeEnabled: false,
+		assigneePrefix: '',
+		assigneeSuffix: '',
+		commentsEnabled: false,
+		commentsPrefix: '',
+		commentsSuffix: '',
+		orderEnabled: false,
+		orderPrefix: '',
+		orderSuffix: '',
+		addedAtEnabled: false,
+		addedAtPrefix: '',
+		addedAtSuffix: '',
+		updatedAtEnabled: false,
+		updatedAtPrefix: '',
+		updatedAtSuffix: '',
+		dueDateEnabled: false,
+		dueDatePrefix: '',
+		dueDateSuffix: '',
+		dueLangEnabled: false,
+		dueLangPrefix: '',
+		dueLangSuffix: '',
+		dueRecurringEnabled: false,
+		dueRecurringPrefix: '',
+		dueRecurringSuffix: '',
 		settingsVersion: 2
 	};
 }
@@ -57,4 +101,72 @@ interface TodoistSettingV1 {
 	authToken: string;
 	keywordToTodoistQuery: keywordTodoistQuery[];
 	settingsVersion: number;
+}
+
+function migrateToV3(settings: any): TodoistSettings {
+	return {
+		...settings,
+		projectEnabled: true,
+		projectPrefix: '[',
+		projectSuffix: ']',
+		sectionEnabled: false,
+		sectionPrefix: '',
+		sectionSuffix: '',
+		labelsEnabled: false,
+		labelsPrefix: '',
+		labelsSuffix: '',
+		dueEnabled: false,
+		duePrefix: '',
+		dueSuffix: '',
+		assigneeEnabled: false,
+		assigneePrefix: '',
+		assigneeSuffix: '',
+		commentsEnabled: false,
+		commentsPrefix: '',
+		commentsSuffix: '',
+		orderEnabled: false,
+		orderPrefix: '',
+		orderSuffix: '',
+		addedAtEnabled: false,
+		addedAtPrefix: '',
+		addedAtSuffix: '',
+		dueDateEnabled: false,
+		dueDatePrefix: '',
+		dueDateSuffix: '',
+		dueRecurringEnabled: false,
+		dueRecurringPrefix: '',
+		dueRecurringSuffix: '',
+		settingsVersion: 3
+	};
+}
+
+function migrateToV4(settings: any): TodoistSettings {
+	return {
+		...settings,
+		assigneeEnabled: false,
+		assigneePrefix: '',
+		assigneeSuffix: '',
+		commentsEnabled: false,
+		commentsPrefix: '',
+		commentsSuffix: '',
+		orderEnabled: false,
+		orderPrefix: '',
+		orderSuffix: '',
+		addedAtEnabled: false,
+		addedAtPrefix: '',
+		addedAtSuffix: '',
+		updatedAtEnabled: false,
+		updatedAtPrefix: '',
+		updatedAtSuffix: '',
+		dueDateEnabled: false,
+		dueDatePrefix: '',
+		dueDateSuffix: '',
+		dueLangEnabled: false,
+		dueLangPrefix: '',
+		dueLangSuffix: '',
+		dueRecurringEnabled: false,
+		dueRecurringPrefix: '',
+		dueRecurringSuffix: '',
+		settingsVersion: 4
+	};
 }

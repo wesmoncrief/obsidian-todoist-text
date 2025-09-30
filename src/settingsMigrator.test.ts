@@ -18,8 +18,20 @@ test('v0 to v2 migration', () => {
 		"keywordToTodoistQuery": [
 			{"keyword": "old_custom_template", "todoistQuery": "old_todoist_query"},
 		],
-		"settingsVersion": 2,
 		"showSubtasks": true,
+		projectEnabled: true,
+		projectPrefix: '[',
+		projectSuffix: ']',
+		sectionEnabled: false,
+		sectionPrefix: '',
+		sectionSuffix: '',
+		labelsEnabled: false,
+		labelsPrefix: '',
+		labelsSuffix: '',
+		dueEnabled: false,
+		duePrefix: '',
+		dueSuffix: '',
+		"settingsVersion": 3,
 	}
 	expect(migrateSettings(v0Settings)).toStrictEqual(expected);
 });
@@ -41,8 +53,20 @@ test('v1 to v2 migration', () => {
 		keywordToTodoistQuery: [
 			{"keyword": "old_custom_template", "todoistQuery": "old_todoist_query"},
 		],
-		settingsVersion: 2,
 		showSubtasks: true,
+		projectEnabled: true,
+		projectPrefix: '[',
+		projectSuffix: ']',
+		sectionEnabled: false,
+		sectionPrefix: '',
+		sectionSuffix: '',
+		labelsEnabled: false,
+		labelsPrefix: '',
+		labelsSuffix: '',
+		dueEnabled: false,
+		duePrefix: '',
+		dueSuffix: '',
+		settingsVersion: 3,
 	}
 	expect(migrateSettings(v0Settings)).toStrictEqual(expected);
 });
@@ -52,7 +76,7 @@ test('v1 default to v1 migration', () => {
 })
 
 test('v2 custom to v2 migration', () => {
-	const v1alreadySetSettings: TodoistSettings = {
+	const v1alreadySetSettings: any = {
 		authToken: "some_auth_token",
 		enableAutomaticReplacement: false,
 		excludedDirectories: ["some_exc_dir"],
@@ -60,6 +84,22 @@ test('v2 custom to v2 migration', () => {
 		settingsVersion: 2,
 		showSubtasks: false
 	}
-	expect(migrateSettings(v1alreadySetSettings)).toStrictEqual(v1alreadySetSettings)
+	const expectedV2 = {
+		...v1alreadySetSettings,
+		projectEnabled: true,
+		projectPrefix: '[',
+		projectSuffix: ']',
+		sectionEnabled: false,
+		sectionPrefix: '',
+		sectionSuffix: '',
+		labelsEnabled: false,
+		labelsPrefix: '',
+		labelsSuffix: '',
+		dueEnabled: false,
+		duePrefix: '',
+		dueSuffix: '',
+		settingsVersion: 3
+	};
+	expect(migrateSettings(v1alreadySetSettings)).toStrictEqual(expectedV2)
 })
 

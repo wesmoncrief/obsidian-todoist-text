@@ -106,6 +106,7 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 		this.addIncludeSubttasksSetting(containerEl);
 		this.addKeywordTodoistQuerySetting(containerEl);
 		this.addExcludedDirectoriesSetting(containerEl);
+		this.addOutputFieldsSettings(containerEl);
 	}
 
 	private addEnableAutomaticReplacementSetting(containerEl: HTMLElement) {
@@ -288,5 +289,462 @@ class TodoistPluginSettingTab extends PluginSettingTab {
 					// give another chance for auto-updates to happen
 					this.plugin.hasIntervalFailure = false;
 				}));
+	}
+
+	private addOutputFieldsSettings(containerEl: HTMLElement) {
+		containerEl.createEl('h2', {text: 'Task Output Fields'});
+
+		const descFragment = document.createDocumentFragment();
+		descFragment.append('Select which additional Todoist fields to display after the task name. Each enabled field will be inserted between -- separators. Use prefix and suffix to format, e.g., [[ and ]] for Obsidian internal links.');
+
+		new Setting(containerEl)
+			.setDesc(descFragment);
+
+		containerEl.createEl('h3', {text: 'Basic Fields'});
+
+		// Project
+		new Setting(containerEl)
+			.setName('Include Project Name')
+			.setDesc('Display the Todoist project for the task (previously always included as [Project Name])')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.projectEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.projectEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setPlaceholder('[[')
+				.setValue(this.plugin.settings.projectPrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.projectPrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.projectPrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setPlaceholder(']]')
+				.setValue(this.plugin.settings.projectSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.projectSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.projectSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		containerEl.createEl('h3', {text: 'Advanced Fields'});
+
+		// Section
+		new Setting(containerEl)
+			.setName('Include Section Name')
+			.setDesc('Display the Todoist section within the project, if applicable')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.sectionEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.sectionEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.sectionPrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.sectionPrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.sectionPrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.sectionSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.sectionSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.sectionSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Labels
+		new Setting(containerEl)
+			.setName('Include Labels')
+			.setDesc('Display comma-separated labels for the task')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.labelsEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.labelsEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.labelsPrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.labelsPrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.labelsPrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.labelsSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.labelsSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.labelsSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Due Date
+		new Setting(containerEl)
+			.setName('Include Due Date')
+			.setDesc('Display the due date for the task, if set')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.dueEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.dueEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.duePrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.duePrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.duePrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.dueSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.dueSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.dueSuffix = val;
+					await this.plugin.saveSettings();
+				})
+
+			);
+
+		// Assignee
+		new Setting(containerEl)
+			.setName('Include Assignee')
+			.setDesc('Display the assignee name for the task, if assigned')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.assigneeEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.assigneeEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.assigneePrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.assigneePrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.assigneePrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.assigneeSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.assigneeSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.assigneeSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Comments Count
+		new Setting(containerEl)
+			.setName('Include Comments Count')
+			.setDesc('Display the number of comments on the task')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.commentsEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.commentsEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.commentsPrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.commentsPrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.commentsPrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.commentsSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.commentsSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.commentsSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Order
+		new Setting(containerEl)
+			.setName('Include Order')
+			.setDesc('Display the task order number')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.orderEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.orderEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.orderPrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.orderPrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.orderPrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.orderSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.orderSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.orderSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Added At
+		new Setting(containerEl)
+			.setName('Include Added Date')
+			.setDesc('Display when the task was added')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.addedAtEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.addedAtEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.addedAtPrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.addedAtPrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.addedAtPrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.addedAtSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.addedAtSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.addedAtSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Due Date (ISO)
+		new Setting(containerEl)
+			.setName('Include Due Date (ISO)')
+			.setDesc('Display the due date in ISO format')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.dueDateEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.dueDateEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.dueDatePrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.dueDatePrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.dueDatePrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.dueDateSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.dueDateSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.dueDateSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		// Due Recurring
+		new Setting(containerEl)
+			.setName('Include Due Recurring')
+			.setDesc('Display if the due date is recurring')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.dueRecurringEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.dueRecurringEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.dueRecurringPrefix)
+				.onChange(async (value) => {
+					this.plugin.settings.dueRecurringPrefix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.dueRecurringPrefix = val;
+					await this.plugin.saveSettings();
+				})
+			)
+			.addText(text => text
+				.setValue(this.plugin.settings.dueRecurringSuffix)
+				.onChange(async (value) => {
+					this.plugin.settings.dueRecurringSuffix = value;
+					await this.plugin.saveSettings();
+				})
+				.inputEl.addEventListener('blur', async () => {
+					let val = text.inputEl.value;
+					if (val.length > 100) {
+						val = val.substring(0, 100);
+					}
+					text.inputEl.value = val;
+					this.plugin.settings.dueRecurringSuffix = val;
+					await this.plugin.saveSettings();
+				})
+			);
 	}
 }
