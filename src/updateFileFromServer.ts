@@ -1,6 +1,14 @@
-import {Task, TodoistApi} from '@doist/todoist-api-typescript'
 import {App, Editor, Notice, } from 'obsidian'
 import {TodoistSettings} from "./DefaultSettings";
+import {
+	closeTodoistTask,
+	extractTaskIdFromLine,
+	getTodoistTask,
+	getTodoistTasks,
+	reopenTodoistTask,
+	TodoistTask,
+	toTodoistRequestError
+} from "./todoistApiClient";
 
 
 export async function updateFileFromServer(settings: TodoistSettings, app: App) {
@@ -33,13 +41,6 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 	}
 }
 
-function extractTaskIdFromLine(lineText: string): string | null {
-	const match = lineText.match(
-		/todoist\.com\/(?:showTask\?id=|app\/task\/)(\d+)/
-	);
-	return match ? match[1] : null;
-}
-
 export async function toggleServerTaskStatus(e: Editor, settings: TodoistSettings) {
 	try {
 		const lineText = e.getLine(e.getCursor().line);
@@ -67,10 +68,9 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		  return;
 		}
 
-		const api = new TodoistApi(settings.authToken)
-		const serverTaskName = (await api.getTask(taskId)).content;
+		const serverTaskName = (await getTodoistTask(settings.authToken, taskId)).content;
 		if (tryingToClose) {
-			await api.closeTask(taskId);
+			await closeTodoistTask(settings.authToken, taskId);
 			
 			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
 
@@ -98,7 +98,7 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		}
 
 		if (tryingToReOpen) {
-			await api.reopenTask(taskId);
+			await reopenTodoistTask(settings.authToken, taskId);
 
 			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
 			
@@ -134,9 +134,7 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 }
 
 async function getServerData(todoistQuery: string, authToken: string, showSubtasks: boolean): Promise<string> {
-	const api = new TodoistApi(authToken)
-
-	const tasks = await callTasksApi(api, todoistQuery);
+	const tasks = await callTasksApi(todoistQuery, authToken);
 	
 	if (tasks.length === 0){
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
@@ -171,31 +169,48 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 	return returnString;
 }
 
-async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
-	let tasks: Task[];
+async function callTasksApi(filter: string, authToken: string): Promise<TodoistTask[]> {
+	let tasks: TodoistTask[];
 	try {
-		tasks = await api.getTasks({filter: filter});
+		tasks = await getTodoistTasks(authToken, filter);
 	} catch (e) {
+		const todoistError = toTodoistRequestError(e);
 		let errorMsg : string;
-		switch (e.httpStatusCode) {
+		switch (todoistError.httpStatusCode) {
 			case undefined:
 				errorMsg = `Todoist text: There was a problem pulling data from Todoist. Is your internet connection working?`
 				break;
+			case 401:
 			case 403:
 				errorMsg ="Todoist text: Authentication with todoist server failed. Check that" +
 					" your API token is set correctly in the settings.";
 				break;
+			case 410:
+				errorMsg = "Todoist text: Todoist returned 410 Gone. The API endpoint may have changed. Update the plugin or use a Todoist plugin maintained for API v1.";
+				break;
 			default:
-				`Todoist text: There was a problem pulling data from Todoist. ${e.responseData}`;
+				{
+					let responseData = "";
+					if (todoistError.responseData !== undefined) {
+						try {
+							responseData = typeof todoistError.responseData === "string" ? todoistError.responseData : JSON.stringify(todoistError.responseData);
+						} catch {
+							responseData = String(todoistError.responseData);
+						}
+					}
+					errorMsg = responseData.length > 0
+						? `Todoist text: There was a problem pulling data from Todoist. ${responseData}`
+						: "Todoist text: There was a problem pulling data from Todoist.";
+				}
 		}
-		console.log(errorMsg, e);
+		console.log(errorMsg, todoistError);
 		new Notice(errorMsg);
-		throw(e)
+		throw(todoistError)
 	}
 	return tasks;
 }
 
-function getSubTasks(subtasks: Task[], parentId: string, indent: number): string {
+function getSubTasks(subtasks: TodoistTask[], parentId: string, indent: number): string {
 	let returnString = "";
 	let filtered = subtasks.filter(sub => sub.parentId == parentId);
 	filtered.forEach(st => {
@@ -205,7 +220,7 @@ function getSubTasks(subtasks: Task[], parentId: string, indent: number): string
 	return returnString;
 }
 
-function getFormattedTaskDetail(task: Task, indent: number, showSubtaskSymbol: boolean): string {	
+function getFormattedTaskDetail(task: TodoistTask, indent: number, showSubtaskSymbol: boolean): string {	
 	let description = getTaskDescription(task.description, indent);
 	let tabs = "\t".repeat(indent);
 
