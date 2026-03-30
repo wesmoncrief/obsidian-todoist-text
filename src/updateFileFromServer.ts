@@ -1,7 +1,99 @@
-import {Task, TodoistApi} from '@doist/todoist-api-typescript'
-import {App, Editor, Notice, } from 'obsidian'
+import {App, Editor, Notice, requestUrl} from 'obsidian'
 import {TodoistSettings} from "./DefaultSettings";
 
+interface TodoistTask {
+	id: string;
+	content: string;
+	description: string;
+	parentId?: string;
+	priority: number;
+	url: string;
+}
+
+interface TodoistTaskResponse {
+	id: string;
+	content: string;
+	description: string;
+	parent_id: string | null;
+	priority: number;
+}
+
+interface TodoistTasksResponse {
+	next_cursor?: string | null;
+	results: TodoistTaskResponse[];
+}
+
+interface TodoistRequestError extends Error {
+	httpStatusCode?: number;
+	responseData?: string;
+}
+
+const TODOIST_API_BASE_URL = "https://api.todoist.com";
+
+function createTodoistRequestError(status: number, responseText: string): TodoistRequestError {
+	const error = new Error(`Todoist request failed with status ${status}`) as TodoistRequestError;
+	error.httpStatusCode = status;
+	error.responseData = responseText;
+	return error;
+}
+
+function parseTodoistResponse(responseText: string): unknown {
+	if (!responseText) {
+		return null;
+	}
+
+	try {
+		return JSON.parse(responseText);
+	} catch (_error) {
+		return responseText;
+	}
+}
+
+async function requestTodoist(path: string, authToken: string, method: "GET" | "POST" = "GET"): Promise<unknown> {
+	const response = await requestUrl({
+		url: `${TODOIST_API_BASE_URL}${path}`,
+		method,
+		headers: {
+			Authorization: `Bearer ${authToken}`,
+			"Content-Type": "application/json"
+		},
+		throw: false
+	});
+
+	if (response.status < 200 || response.status >= 300) {
+		throw createTodoistRequestError(response.status, response.text);
+	}
+
+	return parseTodoistResponse(response.text);
+}
+
+function getTodoistTaskUrl(taskId: string): string {
+	return `https://app.todoist.com/app/task/${taskId}`;
+}
+
+function normalizeTask(task: TodoistTaskResponse): TodoistTask {
+	return {
+		id: task.id,
+		content: task.content,
+		description: task.description,
+		parentId: task.parent_id ?? undefined,
+		priority: task.priority,
+		url: getTodoistTaskUrl(task.id)
+	};
+}
+
+function getTasksResponse(response: unknown): TodoistTasksResponse {
+	if (
+		typeof response !== "object" ||
+		response === null ||
+		!("results" in response) ||
+		!Array.isArray(response.results)
+	) {
+		throw new Error("Todoist text: Unexpected response when fetching tasks.");
+	}
+
+	return response as TodoistTasksResponse;
+}
 
 export async function updateFileFromServer(settings: TodoistSettings, app: App) {
 	const file = app.workspace.getActiveFile();
@@ -35,7 +127,7 @@ export async function updateFileFromServer(settings: TodoistSettings, app: App) 
 
 function extractTaskIdFromLine(lineText: string): string | null {
 	const match = lineText.match(
-		/todoist\.com\/(?:showTask\?id=|app\/task\/)(\d+)/
+		/todoist\.com\/(?:showTask\?id=|app\/task\/)([^)\s]+)/
 	);
 	return match ? match[1] : null;
 }
@@ -67,10 +159,10 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		  return;
 		}
 
-		const api = new TodoistApi(settings.authToken)
-		const serverTaskName = (await api.getTask(taskId)).content;
+		const serverTask = normalizeTask(await requestTodoist(`/api/v1/tasks/${encodeURIComponent(taskId)}`, settings.authToken) as TodoistTaskResponse);
+		const serverTaskName = serverTask.content;
 		if (tryingToClose) {
-			await api.closeTask(taskId);
+			await requestTodoist(`/api/v1/tasks/${encodeURIComponent(taskId)}/close`, settings.authToken, "POST");
 			
 			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
 
@@ -98,7 +190,7 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 		}
 
 		if (tryingToReOpen) {
-			await api.reopenTask(taskId);
+			await requestTodoist(`/api/v1/tasks/${encodeURIComponent(taskId)}/reopen`, settings.authToken, "POST");
 
 			const actionedTaskTabCount = lineText.split(/[^\t]/)[0].length;
 			
@@ -134,9 +226,7 @@ export async function toggleServerTaskStatus(e: Editor, settings: TodoistSetting
 }
 
 async function getServerData(todoistQuery: string, authToken: string, showSubtasks: boolean): Promise<string> {
-	const api = new TodoistApi(authToken)
-
-	const tasks = await callTasksApi(api, todoistQuery);
+	const tasks = await callTasksApi(todoistQuery, authToken);
 	
 	if (tasks.length === 0){
 		new Notice(`Todoist text: You have no tasks matching filter "${todoistQuery}"`);
@@ -171,13 +261,26 @@ async function getServerData(todoistQuery: string, authToken: string, showSubtas
 	return returnString;
 }
 
-async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
-	let tasks: Task[];
+async function callTasksApi(filter: string, authToken: string): Promise<TodoistTask[]> {
+	let tasks: TodoistTask[];
 	try {
-		tasks = await api.getTasks({filter: filter});
+		let nextCursor: string | null | undefined = null;
+		tasks = [];
+
+		do {
+			const cursorQuery = nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : "";
+			const response = await requestTodoist(
+				`/api/v1/tasks/filter?query=${encodeURIComponent(filter)}&limit=200${cursorQuery}`,
+				authToken
+			);
+			const taskResponse = getTasksResponse(response);
+			tasks = tasks.concat(taskResponse.results.map(normalizeTask));
+			nextCursor = taskResponse.next_cursor;
+		} while (nextCursor);
 	} catch (e) {
+		const error = e as TodoistRequestError;
 		let errorMsg : string;
-		switch (e.httpStatusCode) {
+		switch (error.httpStatusCode) {
 			case undefined:
 				errorMsg = `Todoist text: There was a problem pulling data from Todoist. Is your internet connection working?`
 				break;
@@ -186,16 +289,16 @@ async function callTasksApi(api: TodoistApi, filter: string): Promise<Task[]> {
 					" your API token is set correctly in the settings.";
 				break;
 			default:
-				`Todoist text: There was a problem pulling data from Todoist. ${e.responseData}`;
+				errorMsg = `Todoist text: There was a problem pulling data from Todoist. ${error.responseData ?? `HTTP ${error.httpStatusCode}`}`;
 		}
-		console.log(errorMsg, e);
+		console.log(errorMsg, error);
 		new Notice(errorMsg);
-		throw(e)
+		throw(error)
 	}
 	return tasks;
 }
 
-function getSubTasks(subtasks: Task[], parentId: string, indent: number): string {
+function getSubTasks(subtasks: TodoistTask[], parentId: string, indent: number): string {
 	let returnString = "";
 	let filtered = subtasks.filter(sub => sub.parentId == parentId);
 	filtered.forEach(st => {
@@ -205,7 +308,7 @@ function getSubTasks(subtasks: Task[], parentId: string, indent: number): string
 	return returnString;
 }
 
-function getFormattedTaskDetail(task: Task, indent: number, showSubtaskSymbol: boolean): string {	
+function getFormattedTaskDetail(task: TodoistTask, indent: number, showSubtaskSymbol: boolean): string {	
 	let description = getTaskDescription(task.description, indent);
 	let tabs = "\t".repeat(indent);
 
